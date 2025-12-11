@@ -227,30 +227,6 @@ fun BusinessDetailScreen(
                                     color = Primary
                                 )
                             }
-                            
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = Warning,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    text = "${business.rating}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = OnSurface
-                                )
-                                Text(
-                                    text = "(${business.reviewCount})",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = OnSurfaceVariant
-                                )
-                            }
-                        }
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
@@ -281,6 +257,55 @@ fun BusinessDetailScreen(
                             )
                         }
                     }
+                }
+            }
+            
+            // Canales de contacto
+            if (business.contactChannels.isNotEmpty()) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Surface
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp)
+                        ) {
+                            Text(
+                                text = "Contacto",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = OnSurface
+                            )
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            // Mostrar chips en filas de 2
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                business.contactChannels.chunked(2).forEach { rowChannels ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        rowChannels.forEach { channel ->
+                                            ContactChannelChip(
+                                                channel = channel,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        // Agregar espacio vacío si solo hay 1 chip en la fila
+                                        if (rowChannels.size == 1) {
+                                            Spacer(modifier = Modifier.weight(1f))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
             

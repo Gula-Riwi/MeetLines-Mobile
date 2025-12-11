@@ -38,8 +38,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    /** URL base de la API. Cambiar en producción. */
-    private const val BASE_URL = "https://api.meetline.app/v1/"
+    /** URL base de la API de MeetLines. */
+    private const val BASE_URL = "https://services.meet-lines.com/"
     
     /** Timeout de conexión en segundos. */
     private const val CONNECT_TIMEOUT = 30L

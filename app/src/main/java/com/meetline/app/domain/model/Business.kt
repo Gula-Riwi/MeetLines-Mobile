@@ -19,6 +19,7 @@ package com.meetline.app.domain.model
  * @property openingHours Horario de atención (ej: "Lun-Vie: 9:00-18:00")
  * @property professionals Lista de profesionales que trabajan en el negocio
  * @property services Lista de servicios ofrecidos por el negocio
+ * @property contactChannels Lista de canales de contacto (WhatsApp, redes sociales, etc.)
  * @property isFavorite Indica si el usuario ha marcado este negocio como favorito
  */
 data class Business(
@@ -35,6 +36,7 @@ data class Business(
     val openingHours: String,
     val professionals: List<Professional> = emptyList(),
     val services: List<Service> = emptyList(),
+    val contactChannels: List<ContactChannel> = emptyList(),
     val isFavorite: Boolean = false
 )
 

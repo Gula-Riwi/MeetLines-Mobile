@@ -129,34 +129,5 @@ data class AuthResponse(
     val expiresAt: Long?
 )
 
-/**
- * Request para crear una nueva cita.
- *
- * Contiene todos los datos necesarios para agendar una cita.
- *
- * @property businessId ID del negocio seleccionado.
- * @property professionalId ID del profesional seleccionado.
- * @property serviceId ID del servicio a reservar.
- * @property date Fecha de la cita (formato YYYY-MM-DD).
- * @property time Hora de la cita (formato HH:mm).
- * @property notes Notas adicionales del usuario (opcional).
- */
-data class CreateAppointmentRequest(
-    @SerializedName("business_id")
-    val businessId: String,
-    
-    @SerializedName("professional_id")
-    val professionalId: String,
-    
-    @SerializedName("service_id")
-    val serviceId: String,
-    
-    @SerializedName("date")
-    val date: String,
-    
-    @SerializedName("time")
-    val time: String,
-    
-    @SerializedName("notes")
-    val notes: String?
-)
+// CreateAppointmentRequest movido a CreateAppointmentDtos.kt para coincidir con la estructura del endpoint local
+

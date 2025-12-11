@@ -15,6 +15,7 @@ import retrofit2.http.*
  * - **Autenticación**: Login, registro, logout y recuperación de contraseña.
  * - **Usuario**: Perfil y actualización de datos.
  * - **Negocios**: Búsqueda, listado y detalles de negocios.
+ * - **Proyectos**: Listado público de proyectos/negocios.
  * - **Citas**: Gestión completa de citas (CRUD).
  *
  * Todas las respuestas están envueltas en [ApiResponse] para
@@ -171,6 +172,59 @@ interface MeetLineApiService {
         @Query("per_page") perPage: Int = 20
     ): Response<ApiResponse<List<BusinessDto>>>
 
+    // ==================== PROYECTOS PÚBLICOS ====================
+
+    /**
+     * Obtiene la lista pública de proyectos/negocios.
+     *
+     * Este endpoint no requiere autenticación y retorna todos los proyectos
+     * públicos disponibles en la plataforma.
+     *
+     * @return Lista de proyectos públicos.
+     */
+    @GET("api/Projects/public")
+    suspend fun getPublicProjects(): Response<List<ProjectDto>>
+
+    /**
+     * Obtiene los empleados de un proyecto específico.
+     *
+     * Este endpoint no requiere autenticación y retorna todos los empleados
+     * públicos de un proyecto.
+     *
+     * @param projectId ID del proyecto.
+     * @return Lista de empleados del proyecto.
+     */
+    @GET("api/Projects/{projectId}/employees/public")
+    suspend fun getProjectEmployees(
+        @Path("projectId") projectId: String
+    ): Response<List<EmployeeDto>>
+    
+    /**
+     * Obtiene los slots disponibles para un proyecto en una fecha específica.
+     * 
+     * @param url URL completa del endpoint (para usar localhost temporalmente).
+     * @param date Fecha en formato YYYY-MM-DD.
+     */
+    @GET
+    suspend fun getAvailableSlots(
+        @Url url: String,
+        @Query("date") date: String
+    ): Response<AvailabilityResponseDto>
+    
+    /**
+     * Obtiene los canales de contacto públicos de un proyecto.
+     *
+     * Este endpoint retorna los medios de comunicación que el negocio
+     * ofrece a sus clientes (WhatsApp, redes sociales, teléfono, etc.).
+     *
+     * @param projectId ID del proyecto.
+     * @return Lista de canales de contacto.
+     */
+    @GET("api/projects/{projectId}/channels/public")
+    suspend fun getProjectContactChannels(
+        @Path("projectId") projectId: String
+    ): Response<List<ContactChannelDto>>
+
     // ==================== CITAS ====================
 
     /**
@@ -211,6 +265,19 @@ interface MeetLineApiService {
     suspend fun createAppointment(
         @Body request: CreateAppointmentRequest
     ): Response<ApiResponse<AppointmentDto>>
+
+    /**
+     * Crea una nueva cita en el backend local.
+     *
+     * @param url URL del endpoint (para usar localhost/IP temporalmente).
+     * @param request Datos de la cita a crear.
+     * @return Datos de la cita creada.
+     */
+    @POST
+    suspend fun createAppointmentLocal(
+        @Url url: String,
+        @Body request: CreateAppointmentRequest
+    ): Response<AppointmentCreatedResponseDto>
 
     /**
      * Cancela una cita existente.

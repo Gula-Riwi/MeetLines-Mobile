@@ -33,16 +33,17 @@ import javax.inject.Inject
  * Responsabilidades:
  * - Configurar el tema de la aplicación
  * - Configurar las barras de sistema (status bar y navigation bar)
- * - Determinar la pantalla inicial basándose en el estado de autenticación
- * - Inicializar el sistema de navegación
+ * - Inicializar el sistema de navegación con Home como pantalla inicial
+ * 
+ * La aplicación es pública: los usuarios pueden navegar sin autenticación.
+ * El login solo se requiere para acciones específicas como agendar citas.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     /**
      * Gestor de sesión inyectado por Hilt.
-     * Utilizado para verificar si el usuario está autenticado y determinar
-     * la pantalla inicial de la aplicación.
+     * Necesario para verificar autenticación en rutas protegidas.
      */
     @Inject
     lateinit var sessionManager: SessionManager
@@ -52,8 +53,8 @@ class MainActivity : ComponentActivity() {
      * 
      * Configura:
      * - Edge-to-edge display con barras de sistema transparentes
-     * - Determina la pantalla inicial (Login o Home) según el estado de sesión
-     * - Inicializa el sistema de navegación de Compose
+     * - Inicializa el sistema de navegación con Home como pantalla inicial
+     * - Pasa SessionManager para control de autenticación en rutas protegidas
      * 
      * @param savedInstanceState Estado guardado de la instancia anterior, si existe
      */
@@ -72,21 +73,16 @@ class MainActivity : ComponentActivity() {
             )
         )
         
-        // Determinar pantalla inicial ANTES del setContent
-        val isLoggedIn = sessionManager.isLoggedIn()
-        
         setContent {
             MeetLineTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val navController = rememberNavController()
                     
-                    val startDestination = remember {
-                        if (isLoggedIn) Screen.Home.route else Screen.Login.route
-                    }
-                    
+                    // Siempre iniciar en Home - la app es pública
                     AppNavigation(
                         navController = navController,
-                        startDestination = startDestination
+                        startDestination = Screen.Home.route,
+                        sessionManager = sessionManager
                     )
                 }
             }
