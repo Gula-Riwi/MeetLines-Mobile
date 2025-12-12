@@ -132,6 +132,9 @@ fun ProjectDto.toDomain(
         reviewCount = 0,
         address = fullAddress,
         distance = distanceText,
+        distanceKm = calculatedDistance, // Distancia numérica para filtros
+        latitude = latitude,
+        longitude = longitude,
         isOpen = true,
         openingHours = openingHours ?: "Horario no disponible",
         professionals = emptyList(),

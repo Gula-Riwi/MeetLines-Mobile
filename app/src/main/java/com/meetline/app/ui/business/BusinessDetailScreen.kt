@@ -1,6 +1,9 @@
 package com.meetline.app.ui.business
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,7 +21,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -244,17 +249,86 @@ fun BusinessDetailScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         // Info adicional
+                        val context = LocalContext.current
+                        
+                        // Ubicación - clickeable para abrir Maps
+                        if (business.latitude != null && business.longitude != null) {
+                            OutlinedButton(
+                                onClick = {
+                                    val uri = Uri.parse("geo:${business.latitude},${business.longitude}?q=${business.latitude},${business.longitude}(${business.name})")
+                                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                                    intent.setPackage("com.google.android.apps.maps")
+                                    try {
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        // Si no tiene Google Maps, usar navegador
+                                        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=${business.latitude},${business.longitude}"))
+                                        context.startActivity(webIntent)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Primary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = business.address,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.Default.OpenInNew,
+                                    contentDescription = "Abrir en Maps",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        } else {
+                            // Si no hay coordenadas, solo mostrar la dirección
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = OnSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = business.address,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = OnSurfaceVariant
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Horario
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
                         ) {
-                            InfoItem(
-                                icon = Icons.Default.LocationOn,
-                                label = business.distance
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = OnSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
                             )
-                            InfoItem(
-                                icon = Icons.Default.Schedule,
-                                label = business.openingHours
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = business.openingHours,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = OnSurfaceVariant
                             )
                         }
                     }

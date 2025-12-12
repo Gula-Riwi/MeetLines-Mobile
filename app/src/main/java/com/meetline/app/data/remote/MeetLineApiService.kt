@@ -207,15 +207,17 @@ interface MeetLineApiService {
     ): Response<List<EmployeeDto>>
     
     /**
-     * Obtiene los slots disponibles para un proyecto en una fecha específica.
+     * Obtiene los slots disponibles para un empleado específico en una fecha determinada.
      * 
      * @param url URL completa del endpoint (para usar localhost temporalmente).
      * @param date Fecha en formato YYYY-MM-DD.
+     * @param projectId ID del proyecto.
      */
     @GET
     suspend fun getAvailableSlots(
         @Url url: String,
-        @Query("date") date: String
+        @Query("date") date: String,
+        @Query("projectId") projectId: String
     ): Response<AvailabilityResponseDto>
     
     /**
@@ -231,6 +233,19 @@ interface MeetLineApiService {
     suspend fun getProjectContactChannels(
         @Path("projectId") projectId: String
     ): Response<List<ContactChannelDto>>
+    
+    /**
+     * Obtiene los horarios de trabajo de un proyecto para una fecha específica.
+     *
+     * @param url URL completa del endpoint (para usar localhost temporalmente).
+     * @param date Fecha en formato YYYY-MM-DD.
+     * @return Horarios de apertura y cierre del proyecto.
+     */
+    @GET
+    suspend fun getProjectWorkingHours(
+        @Url url: String,
+        @Query("date") date: String
+    ): Response<WorkingHoursDto>
 
     // ==================== CITAS ====================
 

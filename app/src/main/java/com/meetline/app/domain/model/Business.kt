@@ -15,6 +15,9 @@ package com.meetline.app.domain.model
  * @property reviewCount Número total de reseñas recibidas
  * @property address Dirección física del establecimiento
  * @property distance Distancia desde la ubicación del usuario (ej: "2.5 km")
+ * @property distanceKm Distancia numérica en kilómetros (null si no se puede calcular)
+ * @property latitude Latitud de la ubicación del negocio
+ * @property longitude Longitud de la ubicación del negocio
  * @property isOpen Indica si el negocio está abierto en este momento
  * @property openingHours Horario de atención (ej: "Lun-Vie: 9:00-18:00")
  * @property professionals Lista de profesionales que trabajan en el negocio
@@ -32,6 +35,9 @@ data class Business(
     val reviewCount: Int,
     val address: String,
     val distance: String,
+    val distanceKm: Double? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val isOpen: Boolean,
     val openingHours: String,
     val professionals: List<Professional> = emptyList(),

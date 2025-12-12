@@ -122,7 +122,7 @@ fun BusinessCard(
                 
                 Spacer(modifier = Modifier.height(6.dp))
                 
-                // Distancia
+                // Mostrar distancia o dirección según disponibilidad
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
@@ -132,9 +132,11 @@ fun BusinessCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = business.distance,
+                        text = if (business.distance != "N/A") business.distance else business.address,
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariant
+                        color = OnSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

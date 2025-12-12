@@ -127,7 +127,8 @@ class DefaultAppointmentRepository @Inject constructor(
             val request = com.meetline.app.data.model.CreateAppointmentRequest(
                 projectId = business.id,
                 userId = "fc985ecb-dbf3-43a6-a3ca-b5fd248f61e0", // Usuario de prueba harcoded
-                serviceId = service.id,
+                serviceId = service.id.toIntOrNull() ?: 0, // Convertir String a Int
+                employeeId = professional.id,
                 startTime = startTimeStr,
                 endTime = endTimeStr,
                 price = service.price,
@@ -136,7 +137,7 @@ class DefaultAppointmentRepository @Inject constructor(
             )
             
             // 3. Llamar a la API
-            val url = "http://ipprovisional:8080/api/v1/appointments"
+            val url = "http://192.168.20.30:8082/api/v1/appointments"
             val response = apiService.createAppointmentLocal(url, request)
             
             if (response.isSuccessful && response.body() != null) {

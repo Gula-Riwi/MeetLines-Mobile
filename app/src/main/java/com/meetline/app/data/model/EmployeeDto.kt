@@ -10,6 +10,7 @@ import java.util.UUID
  * Esta clase mapea la estructura JSON del endpoint público de empleados de proyectos.
  * Contiene información básica del empleado que luego se convierte al modelo de dominio [Professional].
  *
+ * @property id Identificador único del empleado (UUID).
  * @property name Nombre completo del empleado.
  * @property role Rol o cargo del empleado (ej: "Barbero", "Estilista", "Admin").
  *
@@ -17,6 +18,9 @@ import java.util.UUID
  * @see toProfessional Función de extensión para convertir a modelo de dominio.
  */
 data class EmployeeDto(
+    @SerializedName("id")
+    val id: String,
+    
     @SerializedName("name")
     val name: String,
     
@@ -34,7 +38,7 @@ data class EmployeeDto(
  */
 fun EmployeeDto.toProfessional(): Professional {
     return Professional(
-        id = UUID.randomUUID().toString(), // Generar ID único temporal
+        id = id, // Usar el ID real del empleado de la API
         name = name,
         role = role,
         imageUrl = "https://ui-avatars.com/api/?name=${name.replace(" ", "+")}&background=random", // Avatar generado

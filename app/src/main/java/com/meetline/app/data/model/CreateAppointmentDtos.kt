@@ -13,7 +13,10 @@ data class CreateAppointmentRequest(
     val userId: String,
     
     @SerializedName("serviceId")
-    val serviceId: String, // User example showed int, but typically IDs are strings or ints. Keeping as String or Int? User example: 1. Let's use Any or specific if known. Service ID "service-test-1" is string. User example 1 is int. Let's try String first as our domain uses String.
+    val serviceId: Int, // El backend espera un entero según la documentación de la API
+    
+    @SerializedName("employeeId")
+    val employeeId: String?,
     
     @SerializedName("startTime")
     val startTime: String,
@@ -46,7 +49,10 @@ data class AppointmentCreatedResponseDto(
     val userId: String,
     
     @SerializedName("serviceId")
-    val serviceId: Any,
+    val serviceId: Int,
+    
+    @SerializedName("employeeId")
+    val employeeId: String?,
     
     @SerializedName("startTime")
     val startTime: String,
