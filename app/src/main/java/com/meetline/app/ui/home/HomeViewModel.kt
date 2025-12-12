@@ -62,7 +62,8 @@ class HomeViewModel @Inject constructor(
     private val getFeaturedBusinessesUseCase: GetFeaturedBusinessesUseCase,
     private val getNearbyBusinessesUseCase: GetNearbyBusinessesUseCase,
     private val getAppointmentsUseCase: GetAppointmentsUseCase,
-    private val searchBusinessesUseCase: SearchBusinessesUseCase
+    private val searchBusinessesUseCase: SearchBusinessesUseCase,
+    private val locationManager: com.meetline.app.data.location.LocationManager
 ) : ViewModel() {
     
     /**
@@ -87,7 +88,8 @@ class HomeViewModel @Inject constructor(
      * - Obtiene el usuario actual
      * - Carga todas las categorías de negocios
      * - Obtiene los negocios destacados
-     * - Obtiene los negocios cercanos
+     * - Obtiene la ubicación GPS del usuario
+     * - Obtiene los negocios cercanos usando las coordenadas GPS
      * - Obtiene las próximas citas (limitadas a 2)
      * 
      * Actualiza el estado de la UI con los datos obtenidos.
@@ -100,7 +102,30 @@ class HomeViewModel @Inject constructor(
             val categories = getAllCategoriesUseCase()
             
             val featured = getFeaturedBusinessesUseCase().getOrDefault(emptyList())
-            val nearby = getNearbyBusinessesUseCase().getOrDefault(emptyList())
+            
+            // Obtener ubicación GPS del usuario
+            var latitude: Double? = null
+            var longitude: Double? = null
+            
+            if (locationManager.hasLocationPermission()) {
+                android.util.Log.d("HomeViewModel", "Tiene permisos de ubicación")
+                val locationResult = locationManager.getCurrentLocation()
+                if (locationResult.isSuccess) {
+                    val location = locationResult.getOrNull()
+                    latitude = location?.latitude
+                    longitude = location?.longitude
+                    android.util.Log.d("HomeViewModel", "Ubicación obtenida: lat=$latitude, lon=$longitude")
+                } else {
+                    android.util.Log.e("HomeViewModel", "Error obteniendo ubicación: ${locationResult.exceptionOrNull()?.message}")
+                }
+            } else {
+                android.util.Log.w("HomeViewModel", "No tiene permisos de ubicación")
+            }
+            
+            // Obtener negocios cercanos con las coordenadas (o sin ellas si no están disponibles)
+            android.util.Log.d("HomeViewModel", "Llamando getNearbyBusinesses con lat=$latitude, lon=$longitude")
+            val nearby = getNearbyBusinessesUseCase(latitude, longitude).getOrDefault(emptyList())
+            android.util.Log.d("HomeViewModel", "Negocios cercanos obtenidos: ${nearby.size}")
             val upcoming = getAppointmentsUseCase.getUpcoming().getOrDefault(emptyList())
             
             _uiState.value = HomeUiState(

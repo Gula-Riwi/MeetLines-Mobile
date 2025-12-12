@@ -76,6 +76,9 @@ dependencies {
     // Coil para carga de imágenes
     implementation(libs.coil.compose)
     
+    // Location Services
+    implementation(libs.play.services.location)
+    
     // Networking - Retrofit & OkHttp
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)

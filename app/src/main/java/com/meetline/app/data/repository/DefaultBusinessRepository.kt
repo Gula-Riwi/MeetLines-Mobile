@@ -45,7 +45,7 @@ class DefaultBusinessRepository @Inject constructor(
             val response = apiService.getPublicProjects()
             if (response.isSuccessful && response.body() != null) {
                 val projects = response.body()!!
-                val businesses = projects.map { it.toDomain() }
+                val businesses = projects.map { it.toDomain(userLatitude = null, userLongitude = null) }
                 Result.success(businesses)
             } else {
                 Result.failure(Exception("Error al obtener proyectos: ${response.code()}"))
@@ -103,7 +103,12 @@ class DefaultBusinessRepository @Inject constructor(
                     }
                     
                     // Convertir proyecto a Business con el horario y canales calculados
-                    var business = project.toDomain(openingHours, contactChannels)
+                    var business = project.toDomain(
+                        userLatitude = null,
+                        userLongitude = null,
+                        openingHours = openingHours,
+                        contactChannels = contactChannels
+                    )
                     
                     // Intentar obtener empleados del proyecto
                     try {
@@ -141,7 +146,7 @@ class DefaultBusinessRepository @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 val projects = response.body()!!
                 val businesses = projects
-                    .map { it.toDomain() }
+                    .map { it.toDomain(userLatitude = null, userLongitude = null) }
                     .filter { it.category == category }
                 Result.success(businesses)
             } else {
@@ -164,7 +169,7 @@ class DefaultBusinessRepository @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 val projects = response.body()!!
                 val businesses = projects
-                    .map { it.toDomain() }
+                    .map { it.toDomain(userLatitude = null, userLongitude = null) }
                     .filter { 
                         it.name.contains(query, ignoreCase = true) || 
                         it.description.contains(query, ignoreCase = true)
@@ -187,7 +192,7 @@ class DefaultBusinessRepository @Inject constructor(
         return try {
             val response = apiService.getPublicProjects()
             if (response.isSuccessful && response.body() != null) {
-                val businesses = response.body()!!.map { it.toDomain() }
+                val businesses = response.body()!!.map { it.toDomain(userLatitude = null, userLongitude = null) }
                 // Por ahora retornamos los primeros 5 ya que no hay lógica de "destacados" en API
                 Result.success(businesses.take(5))
             } else {
@@ -201,15 +206,58 @@ class DefaultBusinessRepository @Inject constructor(
     /**
      * Obtiene los negocios cercanos a la ubicación del usuario.
      * 
-     * @return Result con la lista de negocios cercanos
+     * Si se proporcionan coordenadas, consulta el endpoint con filtro de ubicación
+     * y filtra solo los negocios que estén dentro de un radio de 5 km.
+     * Si no se proporcionan, retorna todos los negocios disponibles.
+     * 
+     * @param latitude Latitud de la ubicación del usuario (opcional)
+     * @param longitude Longitud de la ubicación del usuario (opcional)
+     * @return Result con la lista de negocios cercanos (dentro de 5 km)
      */
-    override suspend fun getNearbyBusinesses(): Result<List<Business>> {
+    override suspend fun getNearbyBusinesses(latitude: Double?, longitude: Double?): Result<List<Business>> {
         return try {
-            val response = apiService.getPublicProjects()
+            android.util.Log.d("BusinessRepository", "getNearbyBusinesses llamado con lat=$latitude, lon=$longitude")
+            val response = apiService.getPublicProjects(latitude, longitude)
+            android.util.Log.d("BusinessRepository", "Respuesta del servidor: ${response.code()}, body size: ${response.body()?.size}")
             if (response.isSuccessful && response.body() != null) {
-                val businesses = response.body()!!.map { it.toDomain() }
-                // Por ahora retornamos los primeros 6 ya que no hay geolocalización real
-                Result.success(businesses.take(6))
+                val maxDistanceKm = 4.0 // Radio máximo de cercanía en kilómetros
+                
+                val businesses = response.body()!!
+                    .map { it.toDomain(userLatitude = latitude, userLongitude = longitude) }
+                    // Filtrar solo los que tienen coordenadas válidas cuando el usuario tiene ubicación
+                    .filter { business ->
+                        if (latitude != null && longitude != null) {
+                            // Extraer la distancia numérica y verificar que esté dentro del radio
+                            val distanceValue = business.distance
+                            val distanceKm = when {
+                                distanceValue.endsWith(" m") -> {
+                                    distanceValue.replace(" m", "").toDoubleOrNull()?.div(1000) ?: Double.MAX_VALUE
+                                }
+                                distanceValue.endsWith(" km") -> {
+                                    distanceValue.replace(" km", "").toDoubleOrNull() ?: Double.MAX_VALUE
+                                }
+                                else -> Double.MAX_VALUE
+                            }
+                            // Solo incluir negocios dentro del radio máximo
+                            distanceKm <= maxDistanceKm
+                        } else {
+                            true
+                        }
+                    }
+                    // Ordenar por distancia si está disponible
+                    .sortedBy { business ->
+                        val distanceValue = business.distance
+                        when {
+                            distanceValue.endsWith(" m") -> {
+                                distanceValue.replace(" m", "").toDoubleOrNull()?.div(1000) ?: Double.MAX_VALUE
+                            }
+                            distanceValue.endsWith(" km") -> {
+                                distanceValue.replace(" km", "").toDoubleOrNull() ?: Double.MAX_VALUE
+                            }
+                            else -> Double.MAX_VALUE
+                        }
+                    }
+                Result.success(businesses)
             } else {
                 Result.failure(Exception("Error al obtener cercanos: ${response.code()}"))
             }

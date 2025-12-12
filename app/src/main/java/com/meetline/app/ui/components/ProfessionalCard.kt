@@ -176,8 +176,8 @@ fun ProfessionalChip(
                 text = professional.name.split(" ").first(),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (isSelected) Color.White else OnSurface,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium)
             }
         }
     }
-}
+

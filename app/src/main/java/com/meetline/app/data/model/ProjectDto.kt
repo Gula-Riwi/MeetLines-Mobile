@@ -29,7 +29,25 @@ data class ProjectDto(
     val description: String,
     
     @SerializedName("industry")
-    val industry: String
+    val industry: String,
+    
+    @SerializedName("address")
+    val address: String? = null,
+    
+    @SerializedName("city")
+    val city: String? = null,
+    
+    @SerializedName("country")
+    val country: String? = null,
+    
+    @SerializedName("latitude")
+    val latitude: Double? = null,
+    
+    @SerializedName("longitude")
+    val longitude: Double? = null,
+    
+    @SerializedName("distanceKm")
+    val distanceKm: Double? = null
 )
 
 /**
@@ -44,11 +62,15 @@ data class ProjectDto(
  * - "Servicios" -> OTHER
  * - Otros -> OTHER
  *
+ * @param userLatitude Latitud del usuario para calcular distancia (opcional)
+ * @param userLongitude Longitud del usuario para calcular distancia (opcional)
  * @param openingHours Horario de trabajo calculado desde los slots disponibles (opcional)
  * @param contactChannels Lista de canales de contacto del negocio (opcional)
  * @return Una instancia de [Business] con los datos del proyecto y valores por defecto.
  */
 fun ProjectDto.toDomain(
+    userLatitude: Double? = null,
+    userLongitude: Double? = null,
     openingHours: String? = null,
     contactChannels: List<com.meetline.app.domain.model.ContactChannel> = emptyList()
 ): Business {
@@ -66,6 +88,39 @@ fun ProjectDto.toDomain(
         else -> BusinessCategory.OTHER
     }
     
+    // Calcular distancia si tenemos las coordenadas del usuario y del negocio
+    val calculatedDistance = if (userLatitude != null && userLongitude != null && 
+                                  latitude != null && longitude != null) {
+        calculateDistance(userLatitude, userLongitude, latitude, longitude)
+    } else {
+        distanceKm // Usar la distancia del backend si está disponible
+    }
+    
+    // Formatear la distancia para mostrar
+    val distanceText = when {
+        calculatedDistance != null -> {
+            if (calculatedDistance < 1.0) {
+                "${(calculatedDistance * 1000).toInt()} m"
+            } else {
+                "${String.format("%.1f", calculatedDistance)} km"
+            }
+        }
+        else -> "N/A"
+    }
+    
+    // Construir dirección completa
+    val fullAddress = buildString {
+        address?.let { append(it) }
+        if (city != null) {
+            if (isNotEmpty()) append(", ")
+            append(city)
+        }
+        if (country != null && country != "Colombia") { // No repetir país si es Colombia
+            if (isNotEmpty()) append(", ")
+            append(country)
+        }
+    }.ifEmpty { "Dirección no disponible" }
+    
     return Business(
         id = id,
         name = name,
@@ -75,8 +130,8 @@ fun ProjectDto.toDomain(
         imageUrl = category.imageUrl, // Usar la imagen por defecto de la categoría
         rating = 0.0f,
         reviewCount = 0,
-        address = "Dirección no disponible",
-        distance = "N/A",
+        address = fullAddress,
+        distance = distanceText,
         isOpen = true,
         openingHours = openingHours ?: "Horario no disponible",
         professionals = emptyList(),
@@ -142,4 +197,35 @@ private fun extractTime(isoTimestamp: String): String {
         // "2025-12-15T09:00:00-05:00" -> "09:00"
         isoTimestamp.substringAfter("T").substring(0, 5)
     }
+}
+
+/**
+ * Calcula la distancia entre dos puntos geográficos usando la fórmula de Haversine.
+ *
+ * Esta fórmula calcula la distancia del círculo máximo entre dos puntos en una esfera
+ * dadas sus latitudes y longitudes. Es precisa para distancias cortas y medias.
+ *
+ * @param lat1 Latitud del primer punto (en grados)
+ * @param lon1 Longitud del primer punto (en grados)
+ * @param lat2 Latitud del segundo punto (en grados)
+ * @param lon2 Longitud del segundo punto (en grados)
+ * @return Distancia en kilómetros entre los dos puntos
+ */
+private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val earthRadiusKm = 6371.0 // Radio de la Tierra en kilómetros
+    
+    // Convertir grados a radianes
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+    val lat1Rad = Math.toRadians(lat1)
+    val lat2Rad = Math.toRadians(lat2)
+    
+    // Fórmula de Haversine
+    val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.sin(dLon / 2) * Math.sin(dLon / 2) *
+            Math.cos(lat1Rad) * Math.cos(lat2Rad)
+    
+    val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    
+    return earthRadiusKm * c
 }

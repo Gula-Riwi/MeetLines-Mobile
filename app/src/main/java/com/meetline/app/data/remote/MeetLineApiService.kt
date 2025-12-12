@@ -179,11 +179,18 @@ interface MeetLineApiService {
      *
      * Este endpoint no requiere autenticación y retorna todos los proyectos
      * públicos disponibles en la plataforma.
+     * 
+     * Opcionalmente, puede filtrar por ubicación si se proporcionan coordenadas.
      *
+     * @param latitude Latitud de la ubicación del usuario (opcional).
+     * @param longitude Longitud de la ubicación del usuario (opcional).
      * @return Lista de proyectos públicos.
      */
     @GET("api/Projects/public")
-    suspend fun getPublicProjects(): Response<List<ProjectDto>>
+    suspend fun getPublicProjects(
+        @Query("latitude") latitude: Double? = null,
+        @Query("longitude") longitude: Double? = null
+    ): Response<List<ProjectDto>>
 
     /**
      * Obtiene los empleados de un proyecto específico.

@@ -227,6 +227,7 @@ fun BusinessDetailScreen(
                                     color = Primary
                                 )
                             }
+                        }
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
