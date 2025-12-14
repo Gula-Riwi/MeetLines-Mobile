@@ -23,8 +23,8 @@ data class UserDto(
     @SerializedName("id")
     val id: String,
     
-    @SerializedName("name")
-    val name: String,
+    @SerializedName("fullName")
+    val fullName: String,
     
     @SerializedName("email")
     val email: String,
@@ -32,11 +32,17 @@ data class UserDto(
     @SerializedName("phone")
     val phone: String,
     
-    @SerializedName("avatar_url")
-    val avatarUrl: String?,
+    @SerializedName("avatarUrl")
+    val avatarUrl: String? = null,
     
-    @SerializedName("created_at")
-    val createdAt: Long?
+    @SerializedName("isEmailVerified")
+    val isEmailVerified: Boolean? = null,
+    
+    @SerializedName("isPhoneVerified")
+    val isPhoneVerified: Boolean? = null,
+    
+    @SerializedName("createdAt")
+    val createdAt: Long? = null
 )
 
 /**
@@ -49,7 +55,7 @@ data class UserDto(
  */
 fun UserDto.toDomain(): User = User(
     id = id,
-    name = name,
+    name = fullName,
     email = email,
     phone = phone,
     avatarUrl = avatarUrl,
@@ -66,7 +72,7 @@ fun UserDto.toDomain(): User = User(
  */
 fun User.toDto(): UserDto = UserDto(
     id = id,
-    name = name,
+    fullName = name,
     email = email,
     phone = phone,
     avatarUrl = avatarUrl,

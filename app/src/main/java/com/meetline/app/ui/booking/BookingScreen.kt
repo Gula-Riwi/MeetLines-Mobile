@@ -286,21 +286,72 @@ fun BookingScreen(
             }
             
             // Paso 4: Seleccionar hora
-            if (uiState.selectedDate != null && uiState.availableTimeSlots.isNotEmpty()) {
-                item {
-                    StepHeader(
-                        number = if (business.professionals.isNotEmpty()) 4 else 3,
-                        title = "Elige hora",
-                        isCompleted = uiState.selectedTime != null
-                    )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    TimeSlotPicker(
-                        timeSlots = uiState.availableTimeSlots,
-                        selectedTime = uiState.selectedTime,
-                        onTimeSelected = { viewModel.selectTime(it) }
-                    )
+            if (uiState.selectedDate != null) {
+                if (uiState.availableTimeSlots.isNotEmpty()) {
+                    item {
+                        StepHeader(
+                            number = if (business.professionals.isNotEmpty()) 4 else 3,
+                            title = "Elige hora",
+                            isCompleted = uiState.selectedTime != null
+                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        TimeSlotPicker(
+                            timeSlots = uiState.availableTimeSlots,
+                            selectedTime = uiState.selectedTime,
+                            onTimeSelected = { viewModel.selectTime(it) }
+                        )
+                    }
+                } else {
+                    // Mensaje cuando no hay horarios disponibles
+                    item {
+                        StepHeader(
+                            number = if (business.professionals.isNotEmpty()) 4 else 3,
+                            title = "Elige hora",
+                            isCompleted = false
+                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.errorContainer
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = if (business.isOpen) "No hay horarios disponibles" else "Cerrado hoy",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = if (business.isOpen) 
+                                            "Todos los horarios están ocupados para esta fecha. Intenta con otro día." 
+                                        else 
+                                            "El negocio está cerrado hoy. Selecciona otro día para agendar tu cita.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
             

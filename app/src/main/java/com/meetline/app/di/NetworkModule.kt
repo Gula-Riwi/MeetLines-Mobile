@@ -41,6 +41,9 @@ object NetworkModule {
     /** URL base de la API de MeetLines. */
     private const val BASE_URL = "https://services.meet-lines.com/"
     
+    /** URL base para el servicio de citas (Spring Boot local). */
+    private const val APPOINTMENTS_BASE_URL = "http://192.168.20.30:8080/"
+    
     /** Timeout de conexión en segundos. */
     private const val CONNECT_TIMEOUT = 30L
     
@@ -167,5 +170,17 @@ object NetworkModule {
         retrofit: Retrofit
     ): MeetLineApiService {
         return retrofit.create(MeetLineApiService::class.java)
+    }
+
+    /**
+     * Provee la URL base del servicio de citas.
+     * 
+     * @return URL string para el servicio de appointments.
+     */
+    @Provides
+    @Singleton
+    @javax.inject.Named("AppointmentsUrl")
+    fun provideAppointmentsUrl(): String {
+        return BASE_URL
     }
 }

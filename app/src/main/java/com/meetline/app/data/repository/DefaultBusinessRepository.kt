@@ -30,7 +30,8 @@ import com.meetline.app.domain.repository.BusinessRepository
  */
 @Singleton
 class DefaultBusinessRepository @Inject constructor(
-    private val apiService: MeetLineApiService
+    private val apiService: MeetLineApiService,
+    @javax.inject.Named("AppointmentsUrl") private val appointmentsUrl: String
 ) : BusinessRepository {
 
     /**
@@ -75,18 +76,21 @@ class DefaultBusinessRepository @Inject constructor(
                 
                 if (project != null) {
                     var openingHours: String? = null
+                    var isOpen = true // Por defecto abierto si no hay info
                     var contactChannels: List<com.meetline.app.domain.model.ContactChannel> = emptyList()
                     
                     // Intentar obtener horarios de trabajo del proyecto
                     try {
                         val today = java.time.LocalDate.now()
                         val dateStr = today.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
-                        val url = "http://192.168.20.30:8082/api/v1/appointments/projects/$id/working-hours"
+                        // URL hardcodeada para Spring Boot local (IP local)
+                        val url = "http://192.168.20.30:8080/api/v1/appointments/projects/$id/working-hours"
                         
                         val hoursResponse = apiService.getProjectWorkingHours(url, dateStr)
                         if (hoursResponse.isSuccessful && hoursResponse.body() != null) {
                             val workingHours = hoursResponse.body()!!
                             openingHours = workingHours.formatWorkingHours()
+                            isOpen = workingHours.isOpen // Usar el valor real de la API
                         }
                     } catch (e: Exception) {
                         // Si falla obtener horarios, continuar sin ellos
@@ -108,7 +112,8 @@ class DefaultBusinessRepository @Inject constructor(
                         userLatitude = null,
                         userLongitude = null,
                         openingHours = openingHours,
-                        contactChannels = contactChannels
+                        contactChannels = contactChannels,
+                        isOpen = isOpen
                     )
                     
                     // Intentar obtener empleados del proyecto
@@ -123,6 +128,18 @@ class DefaultBusinessRepository @Inject constructor(
                     } catch (e: Exception) {
                         // Si falla obtener empleados, continuar sin ellos
                         // El negocio ya tiene una lista vacía por defecto
+                    }
+                    
+                    // Intentar obtener servicios del proyecto
+                    try {
+                        val servicesResponse = apiService.getProjectServices(id)
+                        if (servicesResponse.isSuccessful && servicesResponse.body() != null) {
+                            val services = servicesResponse.body()!!.map { it.toDomain() }
+                            // Actualizar el negocio con los servicios
+                            business = business.copy(services = services)
+                        }
+                    } catch (e: Exception) {
+                        // Si falla obtener servicios, continuar con los servicios por defecto
                     }
                     
                     return Result.success(business)
@@ -217,36 +234,28 @@ class DefaultBusinessRepository @Inject constructor(
      */
     override suspend fun getNearbyBusinesses(latitude: Double?, longitude: Double?): Result<List<Business>> {
         return try {
-            android.util.Log.d("BusinessRepository", "getNearbyBusinesses llamado con lat=$latitude, lon=$longitude")
             val response = apiService.getPublicProjects(latitude, longitude)
-            android.util.Log.d("BusinessRepository", "Respuesta del servidor: ${response.code()}, body size: ${response.body()?.size}")
+
             if (response.isSuccessful && response.body() != null) {
                 val maxDistanceKm = 4.0 // Radio máximo de cercanía en kilómetros
                 
                 val allBusinesses = response.body()!!
                     .map { it.toDomain(userLatitude = latitude, userLongitude = longitude) }
                 
-                android.util.Log.d("BusinessRepository", "Total negocios mapeados: ${allBusinesses.size}")
-                allBusinesses.forEach { business ->
-                    android.util.Log.d("BusinessRepository", "  - ${business.name}: distanceKm=${business.distanceKm}, distance=${business.distance}")
-                }
-                
                 val businesses = allBusinesses.filter { business ->
                         // Excluir negocios sin distancia calculada (distanceKm null)
                         val distance = business.distanceKm
                         val include = distance != null && distance <= maxDistanceKm
-                        android.util.Log.d("BusinessRepository", "  Filtro ${business.name}: distance=$distance, include=$include")
                         include
                     }
                     .sortedBy { it.distanceKm } // Ordenar por distancia (más cercano primero)
-                    
-                android.util.Log.d("BusinessRepository", "Negocios filtrados (<=4km): ${businesses.size}")
+                
                 Result.success(businesses)
             } else {
-                Result.failure(Exception("Error al obtener cercanos: ${response.code()}"))
+                Result.failure(Exception("Error al obtener negocios cercanos: ${response.code()}"))
             }
         } catch (e: Exception) {
-             Result.failure(Exception("Error de red: ${e.message}", e))
+            Result.failure(Exception("Error de red: ${e.message}", e))
         }
     }
 
@@ -284,12 +293,19 @@ class DefaultBusinessRepository @Inject constructor(
             val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
             val dateStr = sdf.format(java.util.Date(date))
             
-            // Construir URL usando el nuevo endpoint por empleado
-            val url = "http://192.168.20.30:8082/api/v1/appointments/employees/$professionalId/available-slots"
+            // URL hardcodeada para Spring Boot local (IP local)
+            val url = "http://192.168.20.30:8080/api/v1/appointments/employees/$professionalId/available-slots"
             
             val response = apiService.getAvailableSlots(url, dateStr, businessId)
             
-            if (response.isSuccessful && response.body() != null) {
+            
+            if (response.isSuccessful) {
+                // Si la respuesta es exitosa pero sin body, significa que no hay slots disponibles
+                if (response.body() == null) {
+                    android.util.Log.w("AvailableSlots", "Backend devolvió 200 OK pero sin slots para fecha: $dateStr, employee: $professionalId")
+                    return Result.success(emptyList())
+                }
+                
                 val availability = response.body()!!
                 
                 // Mapear slots de la API a TimeSlot del dominio
@@ -308,7 +324,7 @@ class DefaultBusinessRepository @Inject constructor(
                 
                 Result.success(timeSlots)
             } else {
-                // Si falla o no hay slots, devolver lista vacía o error
+                // Si falla, devolver error con código de respuesta
                 Result.failure(Exception("Error al obtener slots: ${response.code()}"))
             }
         } catch (e: Exception) {

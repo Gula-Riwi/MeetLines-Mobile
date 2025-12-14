@@ -1,6 +1,8 @@
 package com.meetline.app.data.repository
 
 import com.meetline.app.data.local.SessionManager
+import com.meetline.app.data.model.toDomain
+import com.meetline.app.data.model.toDto
 import com.meetline.app.domain.model.User
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -27,55 +29,77 @@ import com.meetline.app.domain.repository.AuthRepository
  */
 @Singleton
 class DefaultAuthRepository @Inject constructor(
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val apiService: com.meetline.app.data.remote.MeetLineApiService
 ) : AuthRepository {
 
     /**
      * Intenta iniciar sesión con las credenciales proporcionadas.
      * 
-     * Valida el email y contraseña, y si son correctos, crea una sesión
-     * para el usuario. En producción, esto enviaría las credenciales
-     * al backend para validación.
-     * 
-     * Validaciones actuales (mock):
-     * - Email no puede estar vacío
-     * - Contraseña debe tener al menos 6 caracteres
+     * Realiza la llamada a la API para autenticar al usuario y
+     * guarda la sesión localmente.
      * 
      * @param email Correo electrónico del usuario
      * @param password Contraseña del usuario
      * @return Result con el objeto User si el login es exitoso, o un error si falla
      */
     override suspend fun login(email: String, password: String): Result<User> {
-        // Simular delay de red
-        delay(1500)
-        
-        // Validación mock - en producción esto iría al backend
-        return if (email.isNotBlank() && password.length >= 6) {
-            val user = User(
-                id = "user_${System.currentTimeMillis()}",
-                name = email.substringBefore("@").replaceFirstChar { it.uppercase() },
+        return try {
+            val request = com.meetline.app.data.model.AuthRequest(
                 email = email,
-                phone = "+57 300 123 4567",
-                avatarUrl = "https://randomuser.me/api/portraits/lego/1.jpg"
+                password = password
             )
-            sessionManager.saveSession(user, "mock_token_${System.currentTimeMillis()}")
-            Result.success(user)
-        } else {
-            Result.failure(Exception("Credenciales inválidas"))
+            
+            val response = apiService.login(request)
+            
+            if (response.isSuccessful && response.body() != null) {
+                val authResponse = response.body()!!
+                
+                // Extraer el ID del usuario del token JWT (del claim 'sub')
+                val userId = extractUserIdFromToken(authResponse.token)
+                
+                val user = User(
+                    id = userId,
+                    name = authResponse.fullName,
+                    email = authResponse.email,
+                    phone = "", // El login no devuelve phone, se puede obtener del perfil después
+                    avatarUrl = null
+                )
+                
+                sessionManager.saveSession(user, authResponse.token)
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Error de autenticación: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
+        }
+    }
+    
+    /**
+     * Extrae el ID del usuario del token JWT.
+     * El ID está en el claim 'sub' del payload.
+     */
+    private fun extractUserIdFromToken(token: String): String {
+        return try {
+            val parts = token.split(".")
+            if (parts.size >= 2) {
+                val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP))
+                val json = com.google.gson.Gson().fromJson(payload, Map::class.java)
+                json["sub"] as? String ?: "unknown_user"
+            } else {
+                "unknown_user"
+            }
+        } catch (e: Exception) {
+            "unknown_user"
         }
     }
 
     /**
      * Registra un nuevo usuario en el sistema.
      * 
-     * Crea una nueva cuenta de usuario con la información proporcionada.
-     * En producción, esto enviaría los datos al backend para crear
-     * la cuenta y validar que el email no esté duplicado.
-     * 
-     * Validaciones actuales (mock):
-     * - Nombre no puede estar vacío
-     * - Email no puede estar vacío
-     * - Contraseña debe tener al menos 6 caracteres
+     * Crea una nueva cuenta de usuario con la información proporcionada
+     * llamando a la API.
      * 
      * @param name Nombre completo del usuario
      * @param email Correo electrónico del usuario
@@ -89,21 +113,37 @@ class DefaultAuthRepository @Inject constructor(
         phone: String,
         password: String
     ): Result<User> {
-        // Simular delay de red
-        delay(1500)
-        
-        return if (name.isNotBlank() && email.isNotBlank() && password.length >= 6) {
-            val user = User(
-                id = "user_${System.currentTimeMillis()}",
-                name = name,
+        return try {
+            val request = com.meetline.app.data.model.AuthRequest(
                 email = email,
-                phone = phone,
-                avatarUrl = null
+                password = password,
+                fullName = name,
+                phone = phone
             )
-            sessionManager.saveSession(user, "mock_token_${System.currentTimeMillis()}")
-            Result.success(user)
-        } else {
-            Result.failure(Exception("Datos inválidos para el registro"))
+            
+            val response = apiService.register(request)
+            
+            if (response.isSuccessful && response.body() != null) {
+                val authResponse = response.body()!!
+                
+                // Extraer el ID del usuario del token JWT
+                val userId = extractUserIdFromToken(authResponse.token)
+                
+                val user = User(
+                    id = userId,
+                    name = authResponse.fullName,
+                    email = authResponse.email,
+                    phone = phone,
+                    avatarUrl = null
+                )
+                
+                sessionManager.saveSession(user, authResponse.token)
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Error en el registro: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
         }
     }
 
@@ -133,37 +173,102 @@ class DefaultAuthRepository @Inject constructor(
     override fun getCurrentUser(): User? = sessionManager.getCurrentUser()
 
     /**
+     * Obtiene el perfil del usuario desde la API.
+     * 
+     * Requiere que el usuario esté autenticado (token en el header).
+     * 
+     * @return Result con el usuario actualizado desde el servidor
+     */
+    override suspend fun getUserProfile(): Result<User> {
+        return try {
+            val response = apiService.getCurrentUser()
+            
+            if (response.isSuccessful && response.body() != null) {
+                val userDto = response.body()!!
+                val user = userDto.toDomain()
+                
+                // Actualizar la sesión local con los datos del servidor
+                sessionManager.updateUser(user)
+                
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Error al obtener perfil: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
+        }
+    }
+    
+    /**
      * Actualiza el perfil del usuario.
      * 
-     * Permite modificar la información del usuario como nombre, teléfono
-     * o foto de perfil. En producción, esto sincronizaría los cambios
-     * con el backend.
+     * Envía los cambios al servidor y actualiza la sesión local.
      * 
      * @param user Objeto User con los datos actualizados
      * @return Result con el usuario actualizado
      */
     override suspend fun updateProfile(user: User): Result<User> {
-        delay(1000)
-        sessionManager.updateUser(user)
-        return Result.success(user)
+        return try {
+            val response = apiService.updateProfile(user.toDto())
+            
+            if (response.isSuccessful && response.body() != null) {
+                val updatedUser = response.body()!!.toDomain()
+                sessionManager.updateUser(updatedUser)
+                Result.success(updatedUser)
+            } else {
+                Result.failure(Exception("Error al actualizar perfil: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
+        }
     }
 
     /**
      * Solicita recuperación de contraseña.
      * 
      * Envía un correo electrónico al usuario con instrucciones para
-     * restablecer su contraseña. En producción, esto activaría el
-     * flujo de recuperación en el backend.
+     * restablecer su contraseña.
      * 
      * @param email Correo electrónico del usuario que olvidó su contraseña
      * @return Result con true si la solicitud fue exitosa, o un error si falla
      */
     override suspend fun requestPasswordReset(email: String): Result<Boolean> {
-        delay(1500)
-        return if (email.isNotBlank()) {
-            Result.success(true)
-        } else {
-            Result.failure(Exception("Email inválido"))
+        return try {
+            val response = apiService.requestPasswordReset(mapOf("email" to email))
+            
+            if (response.isSuccessful) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Error al solicitar recuperación: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
+        }
+    }
+    
+    /**
+     * Restablece la contraseña del usuario usando el token recibido por email.
+     * 
+     * @param token Token de recuperación recibido en el email
+     * @param newPassword Nueva contraseña a establecer
+     * @return Result con true si el reset fue exitoso
+     */
+    override suspend fun resetPassword(token: String, newPassword: String): Result<Boolean> {
+        return try {
+            val request = com.meetline.app.data.model.ResetPasswordRequest(
+                token = token,
+                newPassword = newPassword
+            )
+            
+            val response = apiService.resetPassword(request)
+            
+            if (response.isSuccessful) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Error al restablecer contraseña: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
         }
     }
 }

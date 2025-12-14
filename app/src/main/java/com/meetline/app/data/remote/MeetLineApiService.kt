@@ -34,21 +34,21 @@ interface MeetLineApiService {
      * @param request Credenciales de login (email y contraseña).
      * @return Respuesta con datos del usuario y token de acceso.
      */
-    @POST("auth/login")
+    @POST("api/client/auth/login")
     suspend fun login(
         @Body request: AuthRequest
-    ): Response<ApiResponse<AuthResponse>>
+    ): Response<AuthResponse>
 
     /**
      * Registra un nuevo usuario en el sistema.
      *
-     * @param request Datos de registro (nombre, email, teléfono, contraseña).
+     * @param request Datos de registro (fullName, email, phone, contraseña).
      * @return Respuesta con datos del usuario creado y token de acceso.
      */
-    @POST("auth/register")
+    @POST("api/client/auth/register")
     suspend fun register(
         @Body request: AuthRequest
-    ): Response<ApiResponse<AuthResponse>>
+    ): Response<AuthResponse>
 
     /**
      * Cierra la sesión del usuario actual.
@@ -57,7 +57,7 @@ interface MeetLineApiService {
      *
      * @return Respuesta indicando éxito o error.
      */
-    @POST("auth/logout")
+    @POST("api/client/auth/logout")
     suspend fun logout(): Response<ApiResponse<Unit>>
 
     /**
@@ -69,9 +69,20 @@ interface MeetLineApiService {
      * @param email Mapa con el email del usuario.
      * @return Respuesta indicando si el correo fue enviado.
      */
-    @POST("auth/forgot-password")
+    @POST("api/client/auth/forgot-password")
     suspend fun requestPasswordReset(
         @Body email: Map<String, String>
+    ): Response<ApiResponse<Unit>>
+
+    /**
+     * Restablece la contraseña del usuario.
+     *
+     * @param request Token y nueva contraseña.
+     * @return Respuesta indicando éxito o error.
+     */
+    @POST("api/client/auth/reset-password")
+    suspend fun resetPassword(
+        @Body request: ResetPasswordRequest
     ): Response<ApiResponse<Unit>>
 
     // ==================== USUARIO ====================
@@ -79,10 +90,12 @@ interface MeetLineApiService {
     /**
      * Obtiene el perfil del usuario autenticado.
      *
+     * Requiere token de autenticación en el header (agregado automáticamente por AuthInterceptor).
+     *
      * @return Datos completos del usuario actual.
      */
-    @GET("user/profile")
-    suspend fun getCurrentUser(): Response<ApiResponse<UserDto>>
+    @GET("api/client/auth/me")
+    suspend fun getCurrentUser(): Response<UserDto>
 
     /**
      * Actualiza el perfil del usuario.
@@ -90,10 +103,10 @@ interface MeetLineApiService {
      * @param user Datos actualizados del usuario.
      * @return Usuario con los datos actualizados.
      */
-    @PUT("user/profile")
+    @PUT("api/client/auth/me")
     suspend fun updateProfile(
         @Body user: UserDto
-    ): Response<ApiResponse<UserDto>>
+    ): Response<UserDto>
 
     // ==================== NEGOCIOS ====================
 
@@ -193,6 +206,20 @@ interface MeetLineApiService {
     ): Response<List<ProjectDto>>
 
     /**
+     * Obtiene los servicios públicos de un proyecto específico.
+     *
+     * Este endpoint no requiere autenticación y retorna todos los servicios
+     * disponibles del proyecto.
+     *
+     * @param projectId ID del proyecto.
+     * @return Lista de servicios del proyecto.
+     */
+    @GET("api/projects/{projectId}/services/public")
+    suspend fun getProjectServices(
+        @Path("projectId") projectId: String
+    ): Response<List<ServicePublicDto>>
+
+    /**
      * Obtiene los empleados de un proyecto específico.
      *
      * Este endpoint no requiere autenticación y retorna todos los empleados
@@ -212,6 +239,14 @@ interface MeetLineApiService {
      * @param url URL completa del endpoint (para usar localhost temporalmente).
      * @param date Fecha en formato YYYY-MM-DD.
      * @param projectId ID del proyecto.
+     */
+    /**
+     * Obtiene los slots disponibles para un empleado específico.
+     * 
+     * @param url URL base del microservicio (inyectada).
+     * @param date Fecha en formato YYYY-MM-DD.
+     * @param projectId ID del proyecto.
+     * @param professionalId ID del empleado.
      */
     @GET
     suspend fun getAvailableSlots(
@@ -240,6 +275,12 @@ interface MeetLineApiService {
      * @param url URL completa del endpoint (para usar localhost temporalmente).
      * @param date Fecha en formato YYYY-MM-DD.
      * @return Horarios de apertura y cierre del proyecto.
+     */
+    /**
+     * Obtiene los horarios de trabajo de un proyecto.
+     *
+     * @param url URL completa del endpoint.
+     * @param date Fecha en formato YYYY-MM-DD.
      */
     @GET
     suspend fun getProjectWorkingHours(
@@ -289,17 +330,17 @@ interface MeetLineApiService {
     ): Response<ApiResponse<AppointmentDto>>
 
     /**
-     * Crea una nueva cita en el backend local.
+     * Crea una nueva cita en el sistema.
      *
-     * @param url URL del endpoint (para usar localhost/IP temporalmente).
+     * @param projectId ID del proyecto/negocio.
      * @param request Datos de la cita a crear.
      * @return Datos de la cita creada.
      */
-    @POST
-    suspend fun createAppointmentLocal(
-        @Url url: String,
+    @POST("api/projects/{projectId}/appointments")
+    suspend fun createAppointment(
+        @Path("projectId") projectId: String,
         @Body request: CreateAppointmentRequest
-    ): Response<AppointmentCreatedResponseDto>
+    ): Response<ClientAppointmentDto>
 
     /**
      * Cancela una cita existente.
@@ -330,6 +371,25 @@ interface MeetLineApiService {
         @Query("date") date: String,
         @Query("service_id") serviceId: String
     ): Response<ApiResponse<List<TimeSlotDto>>>
+
+    // ==================== CITAS PROTEGIDAS (Requieren JWT) ====================
+
+    /**
+     * Obtiene las citas del usuario autenticado con filtro opcional.
+     *
+     * Este endpoint está protegido y requiere autenticación JWT.
+     * El token se agrega automáticamente por AuthInterceptor.
+     * El userId se extrae del token en el backend, no se envía en la petición.
+     *
+     * @param url URL completa del endpoint (para usar IP local).
+     * @param pendingOnly Si es true, devuelve solo citas pendientes. Si es false, devuelve todas las citas.
+     * @return Lista de citas del usuario autenticado según el filtro.
+     */
+    @GET
+    suspend fun getClientAppointments(
+        @Url url: String,
+        @Query("pendingOnly") pendingOnly: Boolean
+    ): Response<List<ClientAppointmentDto>>
 }
 
 /**

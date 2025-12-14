@@ -108,13 +108,11 @@ class HomeViewModel @Inject constructor(
             var longitude: Double? = null
             
             if (locationManager.hasLocationPermission()) {
-                android.util.Log.d("HomeViewModel", "Tiene permisos de ubicación")
                 val locationResult = locationManager.getCurrentLocation()
                 if (locationResult.isSuccess) {
                     val location = locationResult.getOrNull()
                     latitude = location?.latitude
                     longitude = location?.longitude
-                    android.util.Log.d("HomeViewModel", "Ubicación obtenida: lat=$latitude, lon=$longitude")
                 } else {
                     android.util.Log.e("HomeViewModel", "Error obteniendo ubicación: ${locationResult.exceptionOrNull()?.message}")
                 }
@@ -123,9 +121,7 @@ class HomeViewModel @Inject constructor(
             }
             
             // Obtener negocios cercanos con las coordenadas (o sin ellas si no están disponibles)
-            android.util.Log.d("HomeViewModel", "Llamando getNearbyBusinesses con lat=$latitude, lon=$longitude")
             val nearby = getNearbyBusinessesUseCase(latitude, longitude).getOrDefault(emptyList())
-            android.util.Log.d("HomeViewModel", "Negocios cercanos obtenidos: ${nearby.size}")
             val upcoming = getAppointmentsUseCase.getUpcoming().getOrDefault(emptyList())
             
             _uiState.value = HomeUiState(

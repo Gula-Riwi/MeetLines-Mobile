@@ -9,11 +9,8 @@ data class CreateAppointmentRequest(
     @SerializedName("projectId")
     val projectId: String,
     
-    @SerializedName("userId")
-    val userId: String,
-    
     @SerializedName("serviceId")
-    val serviceId: Int, // El backend espera un entero según la documentación de la API
+    val serviceId: Int,
     
     @SerializedName("employeeId")
     val employeeId: String?,
@@ -24,14 +21,17 @@ data class CreateAppointmentRequest(
     @SerializedName("endTime")
     val endTime: String,
     
-    @SerializedName("price")
-    val price: Double,
-    
-    @SerializedName("currency")
-    val currency: String,
-    
     @SerializedName("userNotes")
-    val userNotes: String?
+    val userNotes: String?,
+    
+    @SerializedName("clientName")
+    val clientName: String,
+    
+    @SerializedName("clientEmail")
+    val clientEmail: String,
+    
+    @SerializedName("clientPhone")
+    val clientPhone: String
 )
 
 /**

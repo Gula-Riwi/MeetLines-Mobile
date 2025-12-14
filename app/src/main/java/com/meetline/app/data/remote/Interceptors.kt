@@ -41,7 +41,14 @@ class AuthInterceptor @Inject constructor(
         private val UNAUTHENTICATED_ENDPOINTS = listOf(
             "auth/login",
             "auth/register",
-            "auth/forgot-password"
+            "auth/forgot-password",
+            "available-slots",  // Endpoint público de disponibilidad
+            "working-hours",    // Endpoint público de horarios
+            "Projects/public",  // Proyectos públicos
+            "/projects/public", // Endpoints públicos de proyectos (específico)
+            "employees/public", // Empleados públicos
+            "services/public",  // Servicios públicos
+            "channels/public"   // Canales de contacto públicos
         )
     }
 
@@ -55,19 +62,22 @@ class AuthInterceptor @Inject constructor(
         val originalRequest = chain.request()
         val requestPath = originalRequest.url.encodedPath
         
-        // No añadir token a endpoints de autenticación
+        // No añadir token a endpoints de autenticación ni endpoints públicos
         val requiresAuth = UNAUTHENTICATED_ENDPOINTS.none { requestPath.contains(it) }
         
         val request = if (requiresAuth) {
             val token = sessionManager.getAuthToken()
             if (!token.isNullOrBlank()) {
+
                 originalRequest.newBuilder()
                     .header(HEADER_AUTHORIZATION, "$TOKEN_PREFIX$token")
                     .build()
             } else {
+
                 originalRequest
             }
         } else {
+
             originalRequest
         }
         
@@ -96,14 +106,19 @@ class CommonHeadersInterceptor : Interceptor {
      * @return Respuesta HTTP después de procesar la petición.
      */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request().newBuilder()
-            .header(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON)
+        val originalRequest = chain.request()
+        val requestBuilder = originalRequest.newBuilder()
             .header(HEADER_ACCEPT, CONTENT_TYPE_JSON)
             .header(HEADER_PLATFORM, "Android")
             .header(HEADER_APP_VERSION, APP_VERSION)
-            .build()
         
-        return chain.proceed(request)
+        // Solo añadir Content-Type para métodos que envían body
+        // GET no debe tener Content-Type para evitar CORS preflight
+        if (originalRequest.method in listOf("POST", "PUT", "PATCH", "DELETE")) {
+            requestBuilder.header(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON)
+        }
+        
+        return chain.proceed(requestBuilder.build())
     }
     
     companion object {

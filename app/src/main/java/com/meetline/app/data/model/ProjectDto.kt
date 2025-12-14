@@ -72,7 +72,8 @@ fun ProjectDto.toDomain(
     userLatitude: Double? = null,
     userLongitude: Double? = null,
     openingHours: String? = null,
-    contactChannels: List<com.meetline.app.domain.model.ContactChannel> = emptyList()
+    contactChannels: List<com.meetline.app.domain.model.ContactChannel> = emptyList(),
+    isOpen: Boolean = true
 ): Business {
     // Mapear la industria a una categoría de negocio
     val category = when (industry.lowercase()) {
@@ -135,20 +136,10 @@ fun ProjectDto.toDomain(
         distanceKm = calculatedDistance, // Distancia numérica para filtros
         latitude = latitude,
         longitude = longitude,
-        isOpen = true,
+        isOpen = isOpen,
         openingHours = openingHours ?: "Horario no disponible",
         professionals = emptyList(),
-        services = listOf(
-            // SERVICIO QUEMADO PARA PRUEBAS
-            com.meetline.app.domain.model.Service(
-                id = "1",
-                name = "Servicio de Prueba",
-                description = "Servicio para probar disponibilidad",
-                price = 15000.0,
-                duration = 60, // 60 minutos
-                imageUrl = "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400"
-            )
-        ),
+        services = emptyList(), // Los servicios se obtendrán de la API en getBusinessById
         contactChannels = contactChannels,
         isFavorite = false
     )
@@ -231,4 +222,43 @@ private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Do
     val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     
     return earthRadiusKm * c
+}
+
+/**
+ * DTO para representar un servicio público de un proyecto.
+ * 
+ * Mapea la respuesta del endpoint /api/projects/{projectId}/services/public
+ */
+data class ServicePublicDto(
+    @SerializedName("id")
+    val id: Int,
+    
+    @SerializedName("name")
+    val name: String,
+    
+    @SerializedName("description")
+    val description: String,
+    
+    @SerializedName("price")
+    val price: Double,
+    
+    @SerializedName("currency")
+    val currency: String,
+    
+    @SerializedName("durationMinutes")
+    val durationMinutes: Int
+)
+
+/**
+ * Convierte un [ServicePublicDto] a un modelo de dominio [com.meetline.app.domain.model.Service].
+ */
+fun ServicePublicDto.toDomain(): com.meetline.app.domain.model.Service {
+    return com.meetline.app.domain.model.Service(
+        id = id.toString(),
+        name = name,
+        description = description,
+        price = price,
+        duration = durationMinutes,
+        imageUrl = null // La API no devuelve imageUrl
+    )
 }

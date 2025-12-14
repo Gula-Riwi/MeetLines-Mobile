@@ -21,14 +21,17 @@ data class WorkingHoursDto(
 
 /**
  * Formatea los horarios de apertura y cierre en un string legible.
- * Ejemplo: "09:00 - 18:00"
+ * Siempre muestra los horarios, indicando si está abierto o cerrado.
+ * Ejemplo: "09:00 - 18:00" o "Cerrado hoy • 09:00 - 18:00"
  */
 fun WorkingHoursDto.formatWorkingHours(): String {
+    val opening = openingTime.substring(0, 5) // "09:00:00" -> "09:00"
+    val closing = closingTime.substring(0, 5)
+    val hours = "$opening - $closing"
+    
     return if (isOpen) {
-        val opening = openingTime.substring(0, 5) // "09:00:00" -> "09:00"
-        val closing = closingTime.substring(0, 5)
-        "$opening - $closing"
+        hours
     } else {
-        "Cerrado"
+        "Cerrado hoy • $hours"
     }
 }

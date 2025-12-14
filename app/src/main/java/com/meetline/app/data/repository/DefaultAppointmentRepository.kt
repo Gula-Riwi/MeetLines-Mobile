@@ -1,6 +1,8 @@
 package com.meetline.app.data.repository
 
 import com.meetline.app.domain.model.*
+import com.meetline.app.data.model.toDomain
+import com.meetline.app.data.model.toDomain
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +28,9 @@ import com.meetline.app.domain.repository.AppointmentRepository
  */
 @Singleton
 class DefaultAppointmentRepository @Inject constructor(
-    private val apiService: com.meetline.app.data.remote.MeetLineApiService
+    private val apiService: com.meetline.app.data.remote.MeetLineApiService,
+    private val authRepository: com.meetline.app.domain.repository.AuthRepository,
+    @javax.inject.Named("AppointmentsUrl") private val appointmentsUrl: String
 ) : AppointmentRepository {
 
     /**
@@ -123,40 +127,40 @@ class DefaultAppointmentRepository @Inject constructor(
             val startTimeStr = startDateTime.atZone(zoneId).format(formatter)
             val endTimeStr = endDateTime.atZone(zoneId).format(formatter)
             
-            // 2. Crear request DTO
+            // 2. Obtener datos del usuario desde la API
+            val userResult = authRepository.getUserProfile()
+            if (userResult.isFailure) {
+                return Result.failure(Exception("No se pudo obtener el perfil del usuario: ${userResult.exceptionOrNull()?.message}"))
+            }
+            val user = userResult.getOrNull()!!
+            
+            // 3. Crear request DTO con los datos reales del usuario
             val request = com.meetline.app.data.model.CreateAppointmentRequest(
                 projectId = business.id,
-                userId = "fc985ecb-dbf3-43a6-a3ca-b5fd248f61e0", // Usuario de prueba harcoded
                 serviceId = service.id.toIntOrNull() ?: 0, // Convertir String a Int
                 employeeId = professional.id,
                 startTime = startTimeStr,
                 endTime = endTimeStr,
-                price = service.price,
-                currency = "COP",
-                userNotes = notes
+                userNotes = notes,
+                clientName = user.name,
+                clientEmail = user.email,
+                clientPhone = user.phone
             )
             
-            // 3. Llamar a la API
-            val url = "http://192.168.20.30:8082/api/v1/appointments"
-            val response = apiService.createAppointmentLocal(url, request)
+            // 4. Llamar a la API
+            val response = apiService.createAppointment(business.id, request)
             
             if (response.isSuccessful && response.body() != null) {
                 val createdDto = response.body()!!
-                
-                // 4. Construir objeto Appointment para retornar
-                // Usamos los datos originales + ID retornado por API
-                val newAppointment = Appointment(
-                    id = createdDto.id.toString(),
-                    userId = createdDto.userId,
+
+                // Mapear respuesta real del backend (.NET) a dominio
+                val newAppointment = createdDto.toDomain().copy(
+                    // Preferir los datos ya conocidos en UI si vienen vacíos del backend
                     business = business,
                     professional = professional,
-                    service = service,
-                    date = date,
-                    time = time,
-                    status = AppointmentStatus.PENDING,
-                    notes = notes
+                    service = service
                 )
-                
+
                 // Actualizar caché local
                 _appointments.value = _appointments.value + newAppointment
                 Result.success(newAppointment)
@@ -204,6 +208,73 @@ class DefaultAppointmentRepository @Inject constructor(
             Result.success(appointment)
         } else {
             Result.failure(Exception("Cita no encontrada"))
+        }
+    }
+
+    /**
+     * Obtiene las citas activas (pendientes) del usuario autenticado desde la API.
+     *
+     * Este método requiere autenticación JWT. El token se envía automáticamente
+     * mediante el AuthInterceptor. Si el token es inválido o expiró, la API
+     * responderá con 401 Unauthorized.
+     *
+     * @return Result con lista de citas pendientes o error si falla la petición.
+     */
+    override suspend fun getMyActiveAppointments(): Result<List<Appointment>> {
+        return try {
+            // Construir URL completa - endpoint unificado con pendingOnly=true
+            val url = "${appointmentsUrl}api/client/appointments"
+            val response = apiService.getClientAppointments(url, pendingOnly = true)
+            
+            if (response.isSuccessful && response.body() != null) {
+                val appointmentDtos = response.body()!!
+                val appointments = appointmentDtos.map { it.toDomain() }
+                
+                // Actualizar caché local con las citas activas
+                _appointments.value = appointments
+                
+                Result.success(appointments)
+            } else if (response.code() == 401) {
+                // Token inválido para este servicio - NO cerrar sesión global
+                Result.failure(Exception("Error de autorización en servicio de citas (401)"))
+            } else {
+                Result.failure(Exception("Error al obtener citas activas: ${response.code()} - ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
+        }
+    }
+
+    /**
+     * Obtiene el historial completo de citas del usuario autenticado desde la API.
+     *
+     * Este método requiere autenticación JWT y devuelve todas las citas del usuario,
+     * independientemente de su estado (pendientes, completadas, canceladas).
+     *
+     * @return Result con lista completa de citas o error si falla la petición.
+     */
+    override suspend fun getMyAppointmentHistory(): Result<List<Appointment>> {
+        return try {
+            // Construir URL completa - endpoint unificado con pendingOnly=false
+            val url = "${appointmentsUrl}api/client/appointments"
+            val response = apiService.getClientAppointments(url, pendingOnly = false)
+            
+            if (response.isSuccessful && response.body() != null) {
+                val appointmentDtos = response.body()!!
+                val appointments = appointmentDtos.map { it.toDomain() }
+                
+                // Actualizar caché local con todas las citas
+                _appointments.value = appointments
+                
+                Result.success(appointments)
+            } else if (response.code() == 401) {
+                // Token inválido para este servicio - NO cerrar sesión global
+                Result.failure(Exception("Error de autorización en servicio de citas (401)"))
+            } else {
+                Result.failure(Exception("Error al obtener historial de citas: ${response.code()} - ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
         }
     }
 }

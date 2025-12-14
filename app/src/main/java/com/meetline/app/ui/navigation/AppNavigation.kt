@@ -157,7 +157,14 @@ fun AppNavigation(
                     }
                 } else {
                     AppointmentsScreen(
-                        onAppointmentClick = { /* TODO: Appointment detail */ }
+                        onAppointmentClick = { /* TODO: Appointment detail */ },
+                        onNavigateToLogin = {
+                            // Limpiar sesión si expiró
+                            sessionManager.logout()
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
                     )
                 }
             }
@@ -171,8 +178,10 @@ fun AppNavigation(
                 } else {
                     ProfileScreen(
                         onLogout = {
+                            sessionManager.logout()
                             navController.navigate(Screen.Login.route) {
                                 popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
                             }
                         }
                     )
@@ -245,7 +254,7 @@ fun AppNavigation(
                     BookingScreen(
                         onNavigateBack = { navController.popBackStack() },
                         onBookingSuccess = {
-                            navController.navigate(Screen.BookingSuccess.route) {
+                            navController.navigate(Screen.Appointments.route) {
                                 popUpTo(Screen.Home.route)
                             }
                         }

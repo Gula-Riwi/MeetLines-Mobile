@@ -141,7 +141,7 @@ fun BusinessDetailScreen(
                                 selectedService
                             )
                         },
-                        enabled = selectedService != null && business.isOpen,
+                        enabled = selectedService != null,
                         modifier = Modifier.height(50.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Primary)
