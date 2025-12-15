@@ -15,6 +15,7 @@ import retrofit2.http.*
  * - **Autenticación**: Login, registro, logout y recuperación de contraseña.
  * - **Usuario**: Perfil y actualización de datos.
  * - **Negocios**: Búsqueda, listado y detalles de negocios.
+ * - **Proyectos**: Listado público de proyectos/negocios.
  * - **Citas**: Gestión completa de citas (CRUD).
  *
  * Todas las respuestas están envueltas en [ApiResponse] para
@@ -33,21 +34,21 @@ interface MeetLineApiService {
      * @param request Credenciales de login (email y contraseña).
      * @return Respuesta con datos del usuario y token de acceso.
      */
-    @POST("auth/login")
+    @POST("api/client/auth/login")
     suspend fun login(
         @Body request: AuthRequest
-    ): Response<ApiResponse<AuthResponse>>
+    ): Response<AuthResponse>
 
     /**
      * Registra un nuevo usuario en el sistema.
      *
-     * @param request Datos de registro (nombre, email, teléfono, contraseña).
+     * @param request Datos de registro (fullName, email, phone, contraseña).
      * @return Respuesta con datos del usuario creado y token de acceso.
      */
-    @POST("auth/register")
+    @POST("api/client/auth/register")
     suspend fun register(
         @Body request: AuthRequest
-    ): Response<ApiResponse<AuthResponse>>
+    ): Response<AuthResponse>
 
     /**
      * Cierra la sesión del usuario actual.
@@ -56,7 +57,7 @@ interface MeetLineApiService {
      *
      * @return Respuesta indicando éxito o error.
      */
-    @POST("auth/logout")
+    @POST("api/client/auth/logout")
     suspend fun logout(): Response<ApiResponse<Unit>>
 
     /**
@@ -68,9 +69,20 @@ interface MeetLineApiService {
      * @param email Mapa con el email del usuario.
      * @return Respuesta indicando si el correo fue enviado.
      */
-    @POST("auth/forgot-password")
+    @POST("api/client/auth/forgot-password")
     suspend fun requestPasswordReset(
         @Body email: Map<String, String>
+    ): Response<ApiResponse<Unit>>
+
+    /**
+     * Restablece la contraseña del usuario.
+     *
+     * @param request Token y nueva contraseña.
+     * @return Respuesta indicando éxito o error.
+     */
+    @POST("api/client/auth/reset-password")
+    suspend fun resetPassword(
+        @Body request: ResetPasswordRequest
     ): Response<ApiResponse<Unit>>
 
     // ==================== USUARIO ====================
@@ -78,10 +90,12 @@ interface MeetLineApiService {
     /**
      * Obtiene el perfil del usuario autenticado.
      *
+     * Requiere token de autenticación en el header (agregado automáticamente por AuthInterceptor).
+     *
      * @return Datos completos del usuario actual.
      */
-    @GET("user/profile")
-    suspend fun getCurrentUser(): Response<ApiResponse<UserDto>>
+    @GET("api/client/auth/me")
+    suspend fun getCurrentUser(): Response<UserDto>
 
     /**
      * Actualiza el perfil del usuario.
@@ -89,10 +103,10 @@ interface MeetLineApiService {
      * @param user Datos actualizados del usuario.
      * @return Usuario con los datos actualizados.
      */
-    @PUT("user/profile")
+    @PUT("api/client/auth/me")
     suspend fun updateProfile(
         @Body user: UserDto
-    ): Response<ApiResponse<UserDto>>
+    ): Response<UserDto>
 
     // ==================== NEGOCIOS ====================
 
@@ -171,6 +185,109 @@ interface MeetLineApiService {
         @Query("per_page") perPage: Int = 20
     ): Response<ApiResponse<List<BusinessDto>>>
 
+    // ==================== PROYECTOS PÚBLICOS ====================
+
+    /**
+     * Obtiene la lista pública de proyectos/negocios.
+     *
+     * Este endpoint no requiere autenticación y retorna todos los proyectos
+     * públicos disponibles en la plataforma.
+     * 
+     * Opcionalmente, puede filtrar por ubicación si se proporcionan coordenadas.
+     *
+     * @param latitude Latitud de la ubicación del usuario (opcional).
+     * @param longitude Longitud de la ubicación del usuario (opcional).
+     * @return Lista de proyectos públicos.
+     */
+    @GET("api/Projects/public")
+    suspend fun getPublicProjects(
+        @Query("latitude") latitude: Double? = null,
+        @Query("longitude") longitude: Double? = null
+    ): Response<List<ProjectDto>>
+
+    /**
+     * Obtiene los servicios públicos de un proyecto específico.
+     *
+     * Este endpoint no requiere autenticación y retorna todos los servicios
+     * disponibles del proyecto.
+     *
+     * @param projectId ID del proyecto.
+     * @return Lista de servicios del proyecto.
+     */
+    @GET("api/projects/{projectId}/services/public")
+    suspend fun getProjectServices(
+        @Path("projectId") projectId: String
+    ): Response<List<ServicePublicDto>>
+
+    /**
+     * Obtiene los empleados de un proyecto específico.
+     *
+     * Este endpoint no requiere autenticación y retorna todos los empleados
+     * públicos de un proyecto.
+     *
+     * @param projectId ID del proyecto.
+     * @return Lista de empleados del proyecto.
+     */
+    @GET("api/Projects/{projectId}/employees/public")
+    suspend fun getProjectEmployees(
+        @Path("projectId") projectId: String
+    ): Response<List<EmployeeDto>>
+    
+    /**
+     * Obtiene los slots disponibles para un empleado específico en una fecha determinada.
+     * 
+     * @param url URL completa del endpoint (para usar localhost temporalmente).
+     * @param date Fecha en formato YYYY-MM-DD.
+     * @param projectId ID del proyecto.
+     */
+    /**
+     * Obtiene los slots disponibles para un empleado específico.
+     * 
+     * @param url URL base del microservicio (inyectada).
+     * @param date Fecha en formato YYYY-MM-DD.
+     * @param projectId ID del proyecto.
+     * @param professionalId ID del empleado.
+     */
+    @GET
+    suspend fun getAvailableSlots(
+        @Url url: String,
+        @Query("date") date: String,
+        @Query("projectId") projectId: String
+    ): Response<AvailabilityResponseDto>
+    
+    /**
+     * Obtiene los canales de contacto públicos de un proyecto.
+     *
+     * Este endpoint retorna los medios de comunicación que el negocio
+     * ofrece a sus clientes (WhatsApp, redes sociales, teléfono, etc.).
+     *
+     * @param projectId ID del proyecto.
+     * @return Lista de canales de contacto.
+     */
+    @GET("api/projects/{projectId}/channels/public")
+    suspend fun getProjectContactChannels(
+        @Path("projectId") projectId: String
+    ): Response<List<ContactChannelDto>>
+    
+    /**
+     * Obtiene los horarios de trabajo de un proyecto para una fecha específica.
+     *
+     * @param url URL completa del endpoint (para usar localhost temporalmente).
+     * @param date Fecha en formato YYYY-MM-DD.
+     * @return Horarios de apertura y cierre del proyecto.
+     */
+    /**
+     * Obtiene los horarios de trabajo de un proyecto.
+     *
+     * @param url URL completa del endpoint.
+     * @param date Fecha en formato YYYY-MM-DD.
+     */
+    @GET
+    suspend fun getProjectWorkingHours(
+        @Url url: String,
+        @Query("date") date: String
+    ): Response<WorkingHoursDto>
+
     // ==================== CITAS ====================
 
     /**
@@ -213,6 +330,19 @@ interface MeetLineApiService {
     ): Response<ApiResponse<AppointmentDto>>
 
     /**
+     * Crea una nueva cita en el sistema.
+     *
+     * @param projectId ID del proyecto/negocio.
+     * @param request Datos de la cita a crear.
+     * @return Datos de la cita creada.
+     */
+    @POST("api/projects/{projectId}/appointments")
+    suspend fun createAppointment(
+        @Path("projectId") projectId: String,
+        @Body request: CreateAppointmentRequest
+    ): Response<ClientAppointmentDto>
+
+    /**
      * Cancela una cita existente.
      *
      * @param appointmentId ID de la cita a cancelar.
@@ -241,6 +371,25 @@ interface MeetLineApiService {
         @Query("date") date: String,
         @Query("service_id") serviceId: String
     ): Response<ApiResponse<List<TimeSlotDto>>>
+
+    // ==================== CITAS PROTEGIDAS (Requieren JWT) ====================
+
+    /**
+     * Obtiene las citas del usuario autenticado con filtro opcional.
+     *
+     * Este endpoint está protegido y requiere autenticación JWT.
+     * El token se agrega automáticamente por AuthInterceptor.
+     * El userId se extrae del token en el backend, no se envía en la petición.
+     *
+     * @param url URL completa del endpoint (para usar IP local).
+     * @param pendingOnly Si es true, devuelve solo citas pendientes. Si es false, devuelve todas las citas.
+     * @return Lista de citas del usuario autenticado según el filtro.
+     */
+    @GET
+    suspend fun getClientAppointments(
+        @Url url: String,
+        @Query("pendingOnly") pendingOnly: Boolean
+    ): Response<List<ClientAppointmentDto>>
 }
 
 /**

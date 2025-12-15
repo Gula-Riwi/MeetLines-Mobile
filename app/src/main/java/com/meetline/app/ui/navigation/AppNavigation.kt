@@ -28,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.meetline.app.data.local.SessionManager
 import com.meetline.app.ui.appointments.AppointmentsScreen
 import com.meetline.app.ui.booking.BookingScreen
 import com.meetline.app.ui.booking.BookingSuccessScreen
@@ -71,7 +72,8 @@ val bottomNavItems = listOf(
 fun AppNavigation(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Login.route
+    startDestination: String = Screen.Home.route, // App pública - inicia en Home
+    sessionManager: SessionManager
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -90,7 +92,8 @@ fun AppNavigation(
             if (showBottomBar) {
                 BottomNavigationBar(
                     navController = navController,
-                    currentRoute = currentDestination?.route
+                    currentRoute = currentDestination?.route,
+                    sessionManager = sessionManager
                 )
             }
         }
@@ -147,19 +150,42 @@ fun AppNavigation(
             }
             
             composable(Screen.Appointments.route) {
-                AppointmentsScreen(
-                    onAppointmentClick = { /* TODO: Appointment detail */ }
-                )
+                // Proteger ruta - requiere autenticación
+                if (!sessionManager.isLoggedIn()) {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Login.route)
+                    }
+                } else {
+                    AppointmentsScreen(
+                        onAppointmentClick = { /* TODO: Appointment detail */ },
+                        onNavigateToLogin = {
+                            // Limpiar sesión si expiró
+                            sessionManager.logout()
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    )
+                }
             }
             
             composable(Screen.Profile.route) {
-                ProfileScreen(
-                    onLogout = {
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(0) { inclusive = true }
-                        }
+                // Proteger ruta - requiere autenticación
+                if (!sessionManager.isLoggedIn()) {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Login.route)
                     }
-                )
+                } else {
+                    ProfileScreen(
+                        onLogout = {
+                            sessionManager.logout()
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
             }
             
             // Business screens
@@ -190,9 +216,14 @@ fun AppNavigation(
                 BusinessDetailScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onBookAppointment = { businessId, professionalId, serviceId ->
-                        navController.navigate(
-                            Screen.Booking.createRoute(businessId, professionalId, serviceId)
-                        )
+                        // Verificar autenticación antes de permitir booking
+                        if (sessionManager.isLoggedIn()) {
+                            navController.navigate(
+                                Screen.Booking.createRoute(businessId, professionalId, serviceId)
+                            )
+                        } else {
+                            navController.navigate(Screen.Login.route)
+                        }
                     }
                 )
             }
@@ -214,14 +245,21 @@ fun AppNavigation(
                     }
                 )
             ) {
-                BookingScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onBookingSuccess = {
-                        navController.navigate(Screen.BookingSuccess.route) {
-                            popUpTo(Screen.Home.route)
-                        }
+                // Proteger ruta - requiere autenticación
+                if (!sessionManager.isLoggedIn()) {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Login.route)
                     }
-                )
+                } else {
+                    BookingScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onBookingSuccess = {
+                            navController.navigate(Screen.Appointments.route) {
+                                popUpTo(Screen.Home.route)
+                            }
+                        }
+                    )
+                }
             }
             
             composable(Screen.BookingSuccess.route) {
@@ -245,7 +283,8 @@ fun AppNavigation(
 @Composable
 fun BottomNavigationBar(
     navController: NavHostController,
-    currentRoute: String?
+    currentRoute: String?,
+    sessionManager: SessionManager
 ) {
     NavigationBar(
         modifier = Modifier.fillMaxWidth(),
@@ -258,6 +297,14 @@ fun BottomNavigationBar(
             NavigationBarItem(
                 selected = isSelected,
                 onClick = {
+                    // Verificar autenticación para rutas protegidas
+                    if (item.route in listOf(Screen.Appointments.route, Screen.Profile.route)) {
+                        if (!sessionManager.isLoggedIn()) {
+                            navController.navigate(Screen.Login.route)
+                            return@NavigationBarItem
+                        }
+                    }
+                    
                     if (currentRoute != item.route) {
                         navController.navigate(item.route) {
                             popUpTo(navController.graph.findStartDestination().id) {

@@ -214,7 +214,8 @@ fun TimeSlotPicker(
             Text(
                 text = "Horarios disponibles",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = OnSurface
             )
             
             Spacer(modifier = Modifier.height(16.dp))
