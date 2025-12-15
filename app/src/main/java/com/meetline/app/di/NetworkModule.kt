@@ -42,7 +42,7 @@ object NetworkModule {
     private const val BASE_URL = "https://services.meet-lines.com/"
     
     /** URL base para el servicio de citas (Spring Boot local). */
-    private const val APPOINTMENTS_BASE_URL = "http://192.168.20.30:8080/"
+    private const val APPOINTMENTS_BASE_URL = "https://app.meet-lines.com/"
     
     /** Timeout de conexión en segundos. */
     private const val CONNECT_TIMEOUT = 30L

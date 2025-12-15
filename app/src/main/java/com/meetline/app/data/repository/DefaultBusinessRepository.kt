@@ -84,7 +84,7 @@ class DefaultBusinessRepository @Inject constructor(
                         val today = java.time.LocalDate.now()
                         val dateStr = today.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
                         // URL hardcodeada para Spring Boot local (IP local)
-                        val url = "http://192.168.20.30:8080/api/v1/appointments/projects/$id/working-hours"
+                        val url = "https://app.meet-lines.com/api/v1/appointments/projects/$id/working-hours"
                         
                         val hoursResponse = apiService.getProjectWorkingHours(url, dateStr)
                         if (hoursResponse.isSuccessful && hoursResponse.body() != null) {
@@ -294,7 +294,7 @@ class DefaultBusinessRepository @Inject constructor(
             val dateStr = sdf.format(java.util.Date(date))
             
             // URL hardcodeada para Spring Boot local (IP local)
-            val url = "http://192.168.20.30:8080/api/v1/appointments/employees/$professionalId/available-slots"
+            val url = "https://app.meet-lines.com/api/v1/appointments/employees/$professionalId/available-slots"
             
             val response = apiService.getAvailableSlots(url, dateStr, businessId)
             
