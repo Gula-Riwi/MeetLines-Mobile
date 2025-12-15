@@ -54,15 +54,14 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
+    var permissionsRequested by remember { mutableStateOf(false) }
+    
     // Manejo de permisos de ubicación
     val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        // Cuando se otorgan permisos, recargar datos para obtener ubicación
-        if (permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
-            viewModel.refresh()
-        }
+        permissionsRequested = true
+        // Ya no es necesario llamar refresh aquí porque el init ya cargó los datos
     }
     
     // Solicitar permisos al iniciar la pantalla

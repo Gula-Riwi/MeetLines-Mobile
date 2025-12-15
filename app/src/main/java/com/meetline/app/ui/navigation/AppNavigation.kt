@@ -144,7 +144,14 @@ fun AppNavigation(
                         navController.navigate(Screen.BusinessList.createRoute())
                     },
                     onSeeAllAppointments = {
-                        navController.navigate(Screen.Appointments.route)
+                        // Navegar igual que el bottom bar para consistencia
+                        navController.navigate(Screen.Appointments.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 )
             }

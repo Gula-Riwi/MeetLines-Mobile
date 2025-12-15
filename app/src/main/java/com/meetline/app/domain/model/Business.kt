@@ -114,6 +114,228 @@ enum class BusinessCategory(
         "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=400"
     ),
     
+    /** Servicios de tatuajes y arte corporal */
+    TATTOO(
+        "Tatuajes",
+        "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=400"
+    ),
+    
+    /** Servicios de fisioterapia y rehabilitación */
+    PHYSIOTHERAPY(
+        "Fisioterapia",
+        "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400"
+    ),
+    
+    /** Servicios de fotografía profesional */
+    PHOTOGRAPHY(
+        "Fotografía",
+        "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=400"
+    ),
+    
+    /** Servicios de consultoría y asesoramiento empresarial */
+    CONSULTING(
+        "Consultoría",
+        "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400"
+    ),
+    
+    /** Servicios de psicología y terapia */
+    PSYCHOLOGY(
+        "Psicología",
+        "https://images.unsplash.com/photo-1527689368864-3a821dbccc34?w=400"
+    ),
+    
+    /** Academias y servicios de enseñanza */
+    EDUCATION(
+        "Academia",
+        "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400"
+    ),
+    
+    /** Servicios de mantenimiento automotriz */
+    CAR_SERVICE(
+        "Taller Automotriz",
+        "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400"
+    ),
+    
+    /** Servicios de lavandería y tintorería */
+    LAUNDRY(
+        "Lavandería",
+        "https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=400"
+    ),
+    
+    /** Servicios de reparación de dispositivos electrónicos */
+    ELECTRONICS_REPAIR(
+        "Reparación Electrónica",
+        "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400"
+    ),
+    
+    /** Servicios de limpieza del hogar */
+    CLEANING(
+        "Limpieza del Hogar",
+        "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400"
+    ),
+    
+    /** Servicios de cuidado y estética de mascotas */
+    PET_GROOMING(
+        "Estética de Mascotas",
+        "https://images.unsplash.com/photo-1559190394-df5a28aab5c5?w=400"
+    ),
+    
+    /** Estudios de yoga y meditación */
+    YOGA(
+        "Yoga & Meditación",
+        "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400"
+    ),
+    
+    /** Servicios de nutrición y dietética */
+    NUTRITION(
+        "Nutrición",
+        "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400"
+    ),
+    
+    /** Servicios contables y fiscales */
+    ACCOUNTING(
+        "Contabilidad",
+        "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400"
+    ),
+    
+    /** Servicios de diseño gráfico y creativo */
+    DESIGN(
+        "Diseño Gráfico",
+        "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400"
+    ),
+    
+    /** Servicios de arquitectura y diseño de interiores */
+    ARCHITECTURE(
+        "Arquitectura",
+        "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=400"
+    ),
+    
+    /** Servicios de oftalmología y cuidado visual */
+    OPTOMETRY(
+        "Oftalmología",
+        "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=400"
+    ),
+    
+    /** Servicios de dermatología y cuidado de la piel */
+    DERMATOLOGY(
+        "Dermatología",
+        "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400"
+    ),
+    
+    /** Servicios de quiropráctica y ajustes de columna */
+    CHIROPRACTIC(
+        "Quiropráctica",
+        "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400"
+    ),
+    
+    /** Servicios de podología y cuidado de pies */
+    PODIATRY(
+        "Podología",
+        "https://images.unsplash.com/photo-1612349316228-5942a9b489c2?w=400"
+    ),
+    
+    /** Servicios de laboratorio clínico y análisis */
+    LABORATORY(
+        "Laboratorio Clínico",
+        "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=400"
+    ),
+    
+    /** Servicios de terapia ocupacional */
+    OCCUPATIONAL_THERAPY(
+        "Terapia Ocupacional",
+        "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=400"
+    ),
+    
+    /** Servicios de terapia del lenguaje */
+    SPEECH_THERAPY(
+        "Terapia del Lenguaje",
+        "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400"
+    ),
+    
+    /** Servicios de entrenamiento personal */
+    PERSONAL_TRAINING(
+        "Entrenamiento Personal",
+        "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400"
+    ),
+    
+    /** Servicios de estilismo y asesoría de imagen */
+    STYLING(
+        "Estilismo",
+        "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400"
+    ),
+    
+    /** Servicios de barbería premium */
+    BARBER_SHOP_PREMIUM(
+        "Barbería Premium",
+        "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400"
+    ),
+    
+    /** Servicios de extensiones y tratamientos capilares */
+    HAIR_EXTENSIONS(
+        "Extensiones Capilares",
+        "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400"
+    ),
+    
+    /** Servicios de maquillaje profesional */
+    MAKEUP(
+        "Maquillaje Profesional",
+        "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400"
+    ),
+    
+    /** Servicios de depilación láser y estética */
+    LASER_HAIR_REMOVAL(
+        "Depilación Láser",
+        "https://images.unsplash.com/photo-1519415387722-a1c3bbef716c?w=400"
+    ),
+    
+    /** Servicios de masajes terapéuticos */
+    MASSAGE_THERAPY(
+        "Masajes Terapéuticos",
+        "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400"
+    ),
+    
+    /** Servicios de acupuntura y medicina alternativa */
+    ACUPUNCTURE(
+        "Acupuntura",
+        "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400"
+    ),
+    
+    /** Servicios de floristería y decoración */
+    FLORIST(
+        "Floristería",
+        "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400"
+    ),
+    
+    /** Servicios de catering y eventos */
+    CATERING(
+        "Catering",
+        "https://images.unsplash.com/photo-1555244162-803834f70033?w=400"
+    ),
+    
+    /** Servicios de organización de eventos */
+    EVENT_PLANNING(
+        "Organización de Eventos",
+        "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400"
+    ),
+    
+    /** Servicios de carpintería y ebanistería */
+    CARPENTRY(
+        "Carpintería",
+        "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400"
+    ),
+    
+    /** Servicios de plomería */
+    PLUMBING(
+        "Plomería",
+        "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=400"
+    ),
+    
+    /** Servicios de electricidad */
+    ELECTRICAL(
+        "Electricidad",
+        "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400"
+    ),
+    
     /** Otros servicios no clasificados en las categorías anteriores */
     OTHER(
         "Otros",

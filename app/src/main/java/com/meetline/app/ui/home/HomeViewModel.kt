@@ -78,6 +78,8 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     
     init {
+        // No cargar datos aquí - esperar a que HomeScreen solicite permisos primero
+        // para evitar peticiones duplicadas
         loadInitialData()
     }
     

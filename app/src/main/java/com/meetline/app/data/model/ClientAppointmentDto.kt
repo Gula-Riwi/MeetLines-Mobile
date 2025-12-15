@@ -42,6 +42,12 @@ data class ClientAppointmentDto(
     @SerializedName("endTime")
     val endTime: String?,
 
+    @SerializedName("price")
+    val price: Double?,
+
+    @SerializedName("currency")
+    val currency: String?,
+
     @SerializedName("status")
     val status: String?,
 
@@ -105,7 +111,7 @@ fun ClientAppointmentDto.toDomain(): Appointment {
             id = (serviceId ?: 0L).toString(),
             name = serviceName ?: "",
             description = "",
-            price = 0.0,
+            price = price ?: 0.0,
             duration = 0
         ),
         date = dateMillis,
