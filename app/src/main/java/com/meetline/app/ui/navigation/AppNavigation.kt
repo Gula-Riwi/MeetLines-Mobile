@@ -73,7 +73,9 @@ fun AppNavigation(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Home.route, // App pública - inicia en Home
-    sessionManager: SessionManager
+    sessionManager: SessionManager,
+    isDarkMode: Boolean,
+    onThemeToggle: () -> Unit
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -152,7 +154,8 @@ fun AppNavigation(
                             launchSingleTop = true
                             restoreState = true
                         }
-                    }
+                    },
+                    isDarkMode = isDarkMode
                 )
             }
             
@@ -190,9 +193,20 @@ fun AppNavigation(
                                 popUpTo(0) { inclusive = true }
                                 launchSingleTop = true
                             }
+                        },
+                        isDarkMode = isDarkMode,
+                        onThemeToggle = onThemeToggle,
+                        onNavigateToAbout = {
+                            navController.navigate(Screen.About.route)
                         }
                     )
                 }
+            }
+            
+            composable(Screen.About.route) {
+                com.meetline.app.ui.about.AboutScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
             
             // Business screens

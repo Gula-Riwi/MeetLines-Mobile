@@ -1,6 +1,7 @@
 package com.meetline.app.data.repository
 
 
+import com.meetline.app.data.model.PhotoDto
 import com.meetline.app.data.model.formatWorkingHours
 import com.meetline.app.data.model.toDomain
 import com.meetline.app.data.model.toProfessional
@@ -149,6 +150,32 @@ class DefaultBusinessRepository @Inject constructor(
             Result.failure(Exception("Negocio no encontrado"))
         } catch (e: Exception) {
             Result.failure(Exception("Error al obtener negocio: ${e.message}", e))
+        }
+    }
+
+    /**
+     * Obtiene las fotos de un negocio específico.
+     * 
+     * @param businessId Identificador único del negocio
+     * @return Result con la lista de URLs de fotos
+     */
+    override suspend fun getBusinessPhotos(businessId: String): Result<List<String>> {
+        return try {
+            val response = apiService.getProjectPhotos(businessId)
+            if (response.isSuccessful && response.body() != null) {
+                val photos = response.body()!!
+                // Ordenar: fotos principales primero, luego por fecha de creación
+                val sortedPhotos = photos.sortedWith(
+                    compareByDescending<PhotoDto> { it.isMain }
+                        .thenByDescending { it.createdAt }
+                )
+                val photoUrls = sortedPhotos.map { it.url }
+                Result.success(photoUrls)
+            } else {
+                Result.success(emptyList())
+            }
+        } catch (e: Exception) {
+            Result.success(emptyList()) // En caso de error, retornar lista vacía
         }
     }
 

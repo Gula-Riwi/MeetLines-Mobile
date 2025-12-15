@@ -53,7 +53,7 @@ fun DatePicker(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -109,7 +109,7 @@ fun DatePicker(
                     Text(
                         text = day,
                         style = MaterialTheme.typography.labelSmall,
-                        color = OnSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.weight(1f)
                     )
@@ -150,14 +150,14 @@ fun DatePicker(
                                 .clip(CircleShape)
                                 .background(
                                     when {
-                                        isSelected -> Primary
-                                        isToday -> PrimaryContainer
+                                        isSelected -> MaterialTheme.colorScheme.primary
+                                        isToday -> MaterialTheme.colorScheme.primaryContainer
                                         else -> Color.Transparent
                                     }
                                 )
                                 .then(
                                     if (isToday && !isSelected) {
-                                        Modifier.border(1.dp, Primary, CircleShape)
+                                        Modifier.border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
                                     } else Modifier
                                 )
                                 .clickable(enabled = !isPast) {
@@ -169,10 +169,10 @@ fun DatePicker(
                                 text = day.toString(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = when {
-                                    isSelected -> Color.White
-                                    isPast -> Color.Gray
-                                    isToday -> Primary
-                                    else -> OnSurface
+                                    isSelected -> MaterialTheme.colorScheme.onPrimary
+                                    isPast -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    isToday -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurface
                                 },
                                 fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
                             )
@@ -205,7 +205,7 @@ fun TimeSlotPicker(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -215,7 +215,7 @@ fun TimeSlotPicker(
                 text = "Horarios disponibles",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = OnSurface
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -228,7 +228,7 @@ fun TimeSlotPicker(
                 Text(
                     text = "Mañana",
                     style = MaterialTheme.typography.labelMedium,
-                    color = OnSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TimeSlotRow(
@@ -248,7 +248,7 @@ fun TimeSlotPicker(
                 Text(
                     text = "Tarde",
                     style = MaterialTheme.typography.labelMedium,
-                    color = OnSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TimeSlotRow(
@@ -267,7 +267,7 @@ fun TimeSlotPicker(
                 Text(
                     text = "Noche",
                     style = MaterialTheme.typography.labelMedium,
-                    color = OnSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TimeSlotRow(
@@ -303,18 +303,18 @@ private fun TimeSlotRow(
                     },
                 shape = RoundedCornerShape(8.dp),
                 color = when {
-                    isSelected -> Primary
-                    slot.isAvailable -> SurfaceVariant
-                    else -> Color.Gray.copy(alpha = 0.2f)
+                    isSelected -> MaterialTheme.colorScheme.primary
+                    slot.isAvailable -> MaterialTheme.colorScheme.surfaceVariant
+                    else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 }
             ) {
                 Text(
                     text = slot.time,
                     style = MaterialTheme.typography.bodyMedium,
                     color = when {
-                        isSelected -> Color.White
-                        slot.isAvailable -> OnSurface
-                        else -> Color.Gray
+                        isSelected -> MaterialTheme.colorScheme.onPrimary
+                        slot.isAvailable -> MaterialTheme.colorScheme.onSurface
+                        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     },
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(vertical = 10.dp)

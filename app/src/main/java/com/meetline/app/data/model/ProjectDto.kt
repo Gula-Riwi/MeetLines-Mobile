@@ -47,7 +47,10 @@ data class ProjectDto(
     val longitude: Double? = null,
     
     @SerializedName("distanceKm")
-    val distanceKm: Double? = null
+    val distanceKm: Double? = null,
+    
+    @SerializedName("profilePhotoUrl")
+    val profilePhotoUrl: String? = null
 )
 
 /**
@@ -127,8 +130,8 @@ fun ProjectDto.toDomain(
         name = name,
         description = description,
         category = category,
-        // Valores por defecto para campos no proporcionados por la API
-        imageUrl = category.imageUrl, // Usar la imagen por defecto de la categoría
+        // Usar profilePhotoUrl si está disponible, si no usar la imagen por defecto de la categoría
+        imageUrl = profilePhotoUrl?.takeIf { it.isNotBlank() } ?: category.imageUrl,
         rating = 0.0f,
         reviewCount = 0,
         address = fullAddress,

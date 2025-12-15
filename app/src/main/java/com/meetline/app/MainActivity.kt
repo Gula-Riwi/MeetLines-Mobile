@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,13 @@ class MainActivity : ComponentActivity() {
      */
     @Inject
     lateinit var sessionManager: SessionManager
+    
+    /**
+     * Gestor de tema inyectado por Hilt.
+     * Maneja la preferencia del modo oscuro del usuario.
+     */
+    @Inject
+    lateinit var themeManager: com.meetline.app.data.local.ThemeManager
 
     /**
      * Método del ciclo de vida llamado cuando se crea la actividad.
@@ -61,20 +69,26 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Configurar barras de sistema con colores claros
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(
-                Color.WHITE,
-                Color.WHITE
-            ),
-            navigationBarStyle = SystemBarStyle.light(
-                Color.WHITE,
-                Color.WHITE
-            )
-        )
-        
         setContent {
-            MeetLineTheme {
+            val isDarkMode by themeManager.isDarkMode.collectAsState()
+            
+            // Configurar barras de sistema según el tema
+            androidx.compose.runtime.LaunchedEffect(isDarkMode) {
+                enableEdgeToEdge(
+                    statusBarStyle = if (isDarkMode) {
+                        SystemBarStyle.dark(Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(Color.WHITE, Color.WHITE)
+                    },
+                    navigationBarStyle = if (isDarkMode) {
+                        SystemBarStyle.dark(Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(Color.WHITE, Color.WHITE)
+                    }
+                )
+            }
+            
+            MeetLineTheme(darkTheme = isDarkMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val navController = rememberNavController()
                     
@@ -82,7 +96,9 @@ class MainActivity : ComponentActivity() {
                     AppNavigation(
                         navController = navController,
                         startDestination = Screen.Home.route,
-                        sessionManager = sessionManager
+                        sessionManager = sessionManager,
+                        isDarkMode = isDarkMode,
+                        onThemeToggle = { themeManager.toggleDarkMode() }
                     )
                 }
             }

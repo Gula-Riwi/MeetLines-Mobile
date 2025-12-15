@@ -167,21 +167,30 @@ fun BusinessDetailScreen(
                 .background(Background),
             contentPadding = PaddingValues(bottom = paddingValues.calculateBottomPadding())
         ) {
-            // Header con imagen
+            // Carrusel de fotos o imagen por defecto
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(220.dp)
+                        .height(300.dp)
                 ) {
-                    AsyncImage(
-                        model = business.imageUrl.ifEmpty { business.category.imageUrl },
-                        contentDescription = business.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                    if (uiState.photos.isNotEmpty()) {
+                        // Mostrar carrusel con las fotos reales
+                        PhotoCarousel(
+                            photos = uiState.photos,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // Mostrar imagen de categoría si no hay fotos
+                        AsyncImage(
+                            model = business.category.imageUrl,
+                            contentDescription = business.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                     
-                    // Badge de estado
+                    // Badge de estado sobre el carrusel
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -340,7 +349,7 @@ fun BusinessDetailScreen(
                 item {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Surface
+                        color = MaterialTheme.colorScheme.surface
                     ) {
                         Column(
                             modifier = Modifier.padding(20.dp)
@@ -349,7 +358,7 @@ fun BusinessDetailScreen(
                                 text = "Contacto",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                color = OnSurface
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             
                             Spacer(modifier = Modifier.height(12.dp))

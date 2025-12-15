@@ -66,7 +66,12 @@ class DefaultAuthRepository @Inject constructor(
                     avatarUrl = null
                 )
                 
-                sessionManager.saveSession(user, authResponse.token)
+                // Guardar sesión con token y refreshToken
+                sessionManager.saveSession(
+                    user = user,
+                    token = authResponse.token,
+                    refreshToken = authResponse.refreshToken
+                )
                 Result.success(user)
             } else {
                 Result.failure(Exception("Error de autenticación: ${response.code()}"))

@@ -39,7 +39,7 @@ fun ContactChannelChip(
             openContactChannel(context, channel)
         },
         shape = RoundedCornerShape(12.dp),
-        color = PrimaryContainer,
+        color = MaterialTheme.colorScheme.primaryContainer,
         tonalElevation = 2.dp
     ) {
         Row(
@@ -50,14 +50,14 @@ fun ContactChannelChip(
             Icon(
                 imageVector = getIconForChannel(channel.type),
                 contentDescription = channel.type.name,
-                tint = Primary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
             
             Text(
                 text = channel.displayValue,
                 style = MaterialTheme.typography.bodyMedium,
-                color = OnSurface
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
