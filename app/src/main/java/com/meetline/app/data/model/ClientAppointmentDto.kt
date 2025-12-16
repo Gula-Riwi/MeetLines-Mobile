@@ -74,12 +74,24 @@ fun ClientAppointmentDto.toDomain(): Appointment {
     val parsedStart = startTime?.let {
         runCatching { OffsetDateTime.parse(it) }.getOrNull()
     }
+    
+    val parsedEnd = endTime?.let {
+        runCatching { OffsetDateTime.parse(it) }.getOrNull()
+    }
 
     val deviceZone = java.time.ZoneId.systemDefault()
     val startInDeviceZone = parsedStart?.atZoneSameInstant(deviceZone)
 
     val dateMillis = startInDeviceZone?.toInstant()?.toEpochMilli() ?: 0L
     val timeStr = startInDeviceZone?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
+    
+    // Calcular duración en minutos entre startTime y endTime
+    val durationMinutes = if (parsedStart != null && parsedEnd != null) {
+        val duration = java.time.Duration.between(parsedStart, parsedEnd)
+        duration.toMinutes().toInt()
+    } else {
+        0
+    }
 
     return Appointment(
         id = (id ?: 0L).toString(),
@@ -112,7 +124,7 @@ fun ClientAppointmentDto.toDomain(): Appointment {
             name = serviceName ?: "",
             description = "",
             price = price ?: 0.0,
-            duration = 0
+            duration = durationMinutes
         ),
         date = dateMillis,
         time = timeStr,
