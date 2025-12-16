@@ -377,7 +377,7 @@ interface MeetLineApiService {
      * @param url URL completa del endpoint.
      * @return Respuesta sin contenido si la cancelación fue exitosa.
      */
-    @PUT
+    @DELETE
     suspend fun cancelClientAppointment(
         @Url url: String
     ): Response<Unit>
