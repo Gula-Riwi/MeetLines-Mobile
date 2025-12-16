@@ -50,9 +50,30 @@ fun HomeScreen(
     onAppointmentClick: (String) -> Unit,
     onSeeAllBusinesses: () -> Unit,
     onSeeAllAppointments: () -> Unit,
+    isDarkMode: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    var permissionsRequested by remember { mutableStateOf(false) }
+    
+    // Manejo de permisos de ubicación
+    val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        permissionsRequested = true
+        // Ya no es necesario llamar refresh aquí porque el init ya cargó los datos
+    }
+    
+    // Solicitar permisos al iniciar la pantalla
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(
+            arrayOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
     
     if (uiState.isLoading) {
         LoadingIndicator()
@@ -72,7 +93,17 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Primary, PrimaryLight)
+                            colors = if (isDarkMode) {
+                                listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                )
+                            } else {
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                )
+                            }
                         ),
                         shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                     )

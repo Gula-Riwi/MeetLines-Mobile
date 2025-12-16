@@ -118,29 +118,6 @@ fun ProfessionalCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = if (professional.isAvailable) OnSurfaceVariant else Color.Gray
                 )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = if (professional.isAvailable) Secondary else Color.Gray,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${professional.rating}",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = if (professional.isAvailable) OnSurface else Color.Gray
-                    )
-                    Text(
-                        text = " (${professional.reviewCount} reseñas)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
             }
             
             if (isSelected) {
@@ -199,26 +176,8 @@ fun ProfessionalChip(
                 text = professional.name.split(" ").first(),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (isSelected) Color.White else OnSurface,
-                fontWeight = FontWeight.Medium
-            )
-            
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = if (isSelected) Color.White else Secondary,
-                    modifier = Modifier.size(12.dp)
-                )
-                Spacer(modifier = Modifier.width(2.dp))
-                Text(
-                    text = "${professional.rating}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isSelected) Color.White else OnSurfaceVariant
-                )
+                fontWeight = FontWeight.Medium)
             }
         }
     }
-}
+

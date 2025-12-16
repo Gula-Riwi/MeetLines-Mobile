@@ -21,23 +21,33 @@ import com.meetline.app.ui.components.*
 import com.meetline.app.ui.theme.*
 
 /**
- * Pantalla que muestra el historial y las próximas citas del usuario.
+ * Pantalla que muestra las citas activas e historial del usuario autenticado.
  *
- * Organiza las citas en dos pestañas: "Próximas" y "Historial".
- * Permite visualizar los detalles de cada cita y cancelar las citas futuras.
+ * Organiza las citas en dos pestañas: "Activas" (pendientes) y "Historial" (todas).
+ * Utiliza autenticación JWT para obtener las citas del usuario autenticado.
+ * Si la sesión expira, redirige automáticamente al login.
  *
  * @param onAppointmentClick Callback al seleccionar una cita para ver detalles
+ * @param onNavigateToLogin Callback para navegar al login cuando la sesión expire
  * @param viewModel ViewModel que gestiona la lista de citas y acciones
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppointmentsScreen(
     onAppointmentClick: (String) -> Unit,
+    onNavigateToLogin: () -> Unit = {},
     viewModel: AppointmentsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
     var showCancelDialog by remember { mutableStateOf<String?>(null) }
+    
+    // Manejar sesión expirada
+    LaunchedEffect(uiState.sessionExpired) {
+        if (uiState.sessionExpired) {
+            onNavigateToLogin()
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -82,13 +92,13 @@ fun AppointmentsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text("Próximas")
-                            if (uiState.upcomingAppointments.isNotEmpty()) {
+                            Text("Activas")
+                            if (uiState.activeAppointments.isNotEmpty()) {
                                 Badge(
                                     containerColor = Primary,
                                     contentColor = Color.White
                                 ) {
-                                    Text(uiState.upcomingAppointments.size.toString())
+                                    Text(uiState.activeAppointments.size.toString())
                                 }
                             }
                         }
@@ -97,26 +107,78 @@ fun AppointmentsScreen(
                 Tab(
                     selected = uiState.selectedTab == 1,
                     onClick = { viewModel.selectTab(1) },
-                    text = { Text("Historial") }
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text("Historial")
+                            if (uiState.historyAppointments.isNotEmpty()) {
+                                Badge(
+                                    containerColor = OnSurfaceVariant,
+                                    contentColor = Color.White
+                                ) {
+                                    Text(uiState.historyAppointments.size.toString())
+                                }
+                            }
+                        }
+                    }
                 )
+            }
+            
+            // Mostrar error si existe
+            uiState.error?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.1f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Error,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = error,
+                            color = Error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { viewModel.clearError() }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Cerrar",
+                                tint = Error
+                            )
+                        }
+                    }
+                }
             }
             
             if (uiState.isLoading) {
                 LoadingIndicator()
             } else {
                 val appointments = if (uiState.selectedTab == 0) {
-                    uiState.upcomingAppointments
+                    uiState.activeAppointments
                 } else {
-                    uiState.pastAppointments
+                    uiState.historyAppointments
                 }
                 
                 if (appointments.isEmpty()) {
                     EmptyState(
-                        title = if (uiState.selectedTab == 0) "Sin citas próximas" else "Sin historial",
+                        title = if (uiState.selectedTab == 0) "Sin citas activas" else "Sin historial",
                         message = if (uiState.selectedTab == 0) {
-                            "No tienes citas programadas. ¡Agenda una ahora!"
+                            "No tienes citas pendientes. ¡Agenda una ahora!"
                         } else {
-                            "Aún no tienes citas completadas"
+                            "Aún no tienes citas en tu historial"
                         }
                     )
                 } else {
@@ -130,7 +192,7 @@ fun AppointmentsScreen(
                                 onClick = { onAppointmentClick(appointment.id) }
                             )
                             
-                            // Mostrar botón de cancelar solo para próximas citas
+                            // Mostrar botón de cancelar solo para citas activas no canceladas
                             if (uiState.selectedTab == 0 && 
                                 appointment.status != AppointmentStatus.CANCELLED) {
                                 OutlinedButton(

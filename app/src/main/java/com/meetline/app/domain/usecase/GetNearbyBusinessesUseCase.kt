@@ -7,7 +7,7 @@ import javax.inject.Inject
 class GetNearbyBusinessesUseCase @Inject constructor(
     private val businessRepository: BusinessRepository
 ) {
-    suspend operator fun invoke(): Result<List<Business>> {
-        return businessRepository.getNearbyBusinesses()
+    suspend operator fun invoke(latitude: Double? = null, longitude: Double? = null): Result<List<Business>> {
+        return businessRepository.getNearbyBusinesses(latitude, longitude)
     }
 }

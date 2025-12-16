@@ -1,6 +1,11 @@
 package com.meetline.app.data.repository
 
-import com.meetline.app.data.local.MockData
+
+import com.meetline.app.data.model.PhotoDto
+import com.meetline.app.data.model.formatWorkingHours
+import com.meetline.app.data.model.toDomain
+import com.meetline.app.data.model.toProfessional
+import com.meetline.app.data.remote.MeetLineApiService
 import com.meetline.app.domain.model.Business
 import com.meetline.app.domain.model.BusinessCategory
 import com.meetline.app.domain.model.TimeSlot
@@ -21,98 +26,264 @@ import com.meetline.app.domain.repository.BusinessRepository
  * - Consulta de horarios disponibles
  * - Gestión de categorías
  * 
- * Actualmente utiliza datos mock de MockData, pero está diseñado
- * para integrarse fácilmente con una API REST en producción.
+ * Utiliza la API real para obtener proyectos públicos y datos mock
+ * para funcionalidades que aún no tienen endpoints disponibles.
  */
 @Singleton
-class DefaultBusinessRepository @Inject constructor() : BusinessRepository {
+class DefaultBusinessRepository @Inject constructor(
+    private val apiService: MeetLineApiService,
+    @javax.inject.Named("AppointmentsUrl") private val appointmentsUrl: String
+) : BusinessRepository {
 
     /**
      * Obtiene todos los negocios disponibles en la plataforma.
      * 
-     * @return Result con la lista completa de negocios
+     * Consume el endpoint público de proyectos para obtener datos reales.
+     * En caso de error, retorna una lista vacía.
+     * 
+     * @return Result con la lista completa de negocios desde la API
      */
     override suspend fun getAllBusinesses(): Result<List<Business>> {
-        delay(800) // Simular latencia de red
-        return Result.success(MockData.businesses)
+        return try {
+            val response = apiService.getPublicProjects()
+            if (response.isSuccessful && response.body() != null) {
+                val projects = response.body()!!
+                val businesses = projects.map { it.toDomain(userLatitude = null, userLongitude = null) }
+                Result.success(businesses)
+            } else {
+                Result.failure(Exception("Error al obtener proyectos: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
+        }
     }
 
     /**
      * Obtiene un negocio específico por su identificador.
      * 
+     * Además de los datos básicos del negocio, obtiene:
+     * - Los empleados del proyecto
+     * - Los slots disponibles del día actual para calcular el horario de trabajo
+     * 
      * @param id Identificador único del negocio
      * @return Result con el negocio si existe, o un error si no se encuentra
      */
     override suspend fun getBusinessById(id: String): Result<Business> {
-        delay(500)
-        val business = MockData.getBusinessById(id)
-        return if (business != null) {
-            Result.success(business)
-        } else {
+        return try {
+            // Intentar obtener de la API primero
+            val response = apiService.getPublicProjects()
+            if (response.isSuccessful && response.body() != null) {
+                val project = response.body()!!.find { it.id == id }
+                
+                if (project != null) {
+                    var openingHours: String? = null
+                    var isOpen = true // Por defecto abierto si no hay info
+                    var contactChannels: List<com.meetline.app.domain.model.ContactChannel> = emptyList()
+                    
+                    // Intentar obtener horarios de trabajo del proyecto
+                    try {
+                        val today = java.time.LocalDate.now()
+                        val dateStr = today.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                        // URL hardcodeada para Spring Boot local (IP local)
+                        val url = "https://app.meet-lines.com/api/v1/appointments/projects/$id/working-hours"
+                        
+                        val hoursResponse = apiService.getProjectWorkingHours(url, dateStr)
+                        if (hoursResponse.isSuccessful && hoursResponse.body() != null) {
+                            val workingHours = hoursResponse.body()!!
+                            openingHours = workingHours.formatWorkingHours()
+                            isOpen = workingHours.isOpen // Usar el valor real de la API
+                        }
+                    } catch (e: Exception) {
+                        // Si falla obtener horarios, continuar sin ellos
+                        // El negocio mostrará "Horario no disponible"
+                    }
+                    
+                    // Intentar obtener canales de contacto
+                    try {
+                        val channelsResponse = apiService.getProjectContactChannels(id)
+                        if (channelsResponse.isSuccessful && channelsResponse.body() != null) {
+                            contactChannels = channelsResponse.body()!!.map { it.toDomain() }
+                        }
+                    } catch (e: Exception) {
+                        // Si falla obtener canales, continuar sin ellos
+                    }
+                    
+                    // Convertir proyecto a Business con el horario y canales calculados
+                    var business = project.toDomain(
+                        userLatitude = null,
+                        userLongitude = null,
+                        openingHours = openingHours,
+                        contactChannels = contactChannels,
+                        isOpen = isOpen
+                    )
+                    
+                    // Intentar obtener empleados del proyecto
+                    try {
+                        val employeesResponse = apiService.getProjectEmployees(id)
+                        if (employeesResponse.isSuccessful && employeesResponse.body() != null) {
+                            val employees = employeesResponse.body()!!
+                            val professionals = employees.map { it.toProfessional() }
+                            // Actualizar el negocio con los empleados
+                            business = business.copy(professionals = professionals)
+                        }
+                    } catch (e: Exception) {
+                        // Si falla obtener empleados, continuar sin ellos
+                        // El negocio ya tiene una lista vacía por defecto
+                    }
+                    
+                    // Intentar obtener servicios del proyecto
+                    try {
+                        val servicesResponse = apiService.getProjectServices(id)
+                        if (servicesResponse.isSuccessful && servicesResponse.body() != null) {
+                            val services = servicesResponse.body()!!.map { it.toDomain() }
+                            // Actualizar el negocio con los servicios
+                            business = business.copy(services = services)
+                        }
+                    } catch (e: Exception) {
+                        // Si falla obtener servicios, continuar con los servicios por defecto
+                    }
+                    
+                    return Result.success(business)
+                }
+            }
+            
             Result.failure(Exception("Negocio no encontrado"))
+        } catch (e: Exception) {
+            Result.failure(Exception("Error al obtener negocio: ${e.message}", e))
+        }
+    }
+
+    /**
+     * Obtiene las fotos de un negocio específico.
+     * 
+     * @param businessId Identificador único del negocio
+     * @return Result con la lista de URLs de fotos
+     */
+    override suspend fun getBusinessPhotos(businessId: String): Result<List<String>> {
+        return try {
+            val response = apiService.getProjectPhotos(businessId)
+            if (response.isSuccessful && response.body() != null) {
+                val photos = response.body()!!
+                // Ordenar: fotos principales primero, luego por fecha de creación
+                val sortedPhotos = photos.sortedWith(
+                    compareByDescending<PhotoDto> { it.isMain }
+                        .thenByDescending { it.createdAt }
+                )
+                val photoUrls = sortedPhotos.map { it.url }
+                Result.success(photoUrls)
+            } else {
+                Result.success(emptyList())
+            }
+        } catch (e: Exception) {
+            Result.success(emptyList()) // En caso de error, retornar lista vacía
         }
     }
 
     /**
      * Filtra los negocios por categoría.
      * 
-     * Permite obtener todos los negocios que pertenecen a una categoría
-     * específica (barbería, spa, dentista, etc.).
-     * 
      * @param category Categoría por la cual filtrar
      * @return Result con la lista de negocios de esa categoría
      */
     override suspend fun getBusinessesByCategory(category: BusinessCategory): Result<List<Business>> {
-        delay(600)
-        return Result.success(MockData.getBusinessesByCategory(category))
+         return try {
+            val response = apiService.getPublicProjects()
+            if (response.isSuccessful && response.body() != null) {
+                val projects = response.body()!!
+                val businesses = projects
+                    .map { it.toDomain(userLatitude = null, userLongitude = null) }
+                    .filter { it.category == category }
+                Result.success(businesses)
+            } else {
+                Result.failure(Exception("Error al filtrar negocios: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
+        }
     }
 
     /**
      * Busca negocios por texto libre.
      * 
-     * Realiza una búsqueda en el nombre, descripción y categoría de los negocios.
-     * La búsqueda no distingue entre mayúsculas y minúsculas.
-     * 
      * @param query Texto a buscar
      * @return Result con la lista de negocios que coinciden con la búsqueda
      */
     override suspend fun searchBusinesses(query: String): Result<List<Business>> {
-        delay(700)
-        return Result.success(MockData.searchBusinesses(query))
+        return try {
+            val response = apiService.getPublicProjects()
+            if (response.isSuccessful && response.body() != null) {
+                val projects = response.body()!!
+                val businesses = projects
+                    .map { it.toDomain(userLatitude = null, userLongitude = null) }
+                    .filter { 
+                        it.name.contains(query, ignoreCase = true) || 
+                        it.description.contains(query, ignoreCase = true)
+                    }
+                Result.success(businesses)
+            } else {
+                Result.failure(Exception("Error al buscar negocios: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
+        }
     }
 
     /**
      * Obtiene los negocios destacados/populares.
      * 
-     * Calcula los negocios más populares basándose en su calificación
-     * y número de reseñas, retornando los 5 mejores.
-     * 
-     * @return Result con la lista de los 5 negocios más destacados
+     * @return Result con la lista de negocios destacados
      */
     override suspend fun getFeaturedBusinesses(): Result<List<Business>> {
-        delay(600)
-        return Result.success(
-            MockData.businesses
-                .sortedByDescending { it.rating * it.reviewCount }
-                .take(5)
-        )
+        return try {
+            val response = apiService.getPublicProjects()
+            if (response.isSuccessful && response.body() != null) {
+                val businesses = response.body()!!.map { it.toDomain(userLatitude = null, userLongitude = null) }
+                // Por ahora retornamos los primeros 5 ya que no hay lógica de "destacados" en API
+                Result.success(businesses.take(5))
+            } else {
+                 Result.failure(Exception("Error al obtener destacados: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+             Result.failure(Exception("Error de red: ${e.message}", e))
+        }
     }
 
     /**
      * Obtiene los negocios cercanos a la ubicación del usuario.
      * 
-     * Ordena los negocios por distancia y retorna los 6 más cercanos.
-     * En producción, esto utilizaría la ubicación GPS real del usuario.
+     * Si se proporcionan coordenadas, consulta el endpoint con filtro de ubicación
+     * y filtra solo los negocios que estén dentro de un radio de 5 km.
+     * Si no se proporcionan, retorna todos los negocios disponibles.
      * 
-     * @return Result con la lista de los 6 negocios más cercanos
+     * @param latitude Latitud de la ubicación del usuario (opcional)
+     * @param longitude Longitud de la ubicación del usuario (opcional)
+     * @return Result con la lista de negocios cercanos (dentro de 5 km)
      */
-    override suspend fun getNearbyBusinesses(): Result<List<Business>> {
-        delay(600)
-        return Result.success(
-            MockData.businesses
-                .sortedBy { it.distance.replace(" km", "").toFloatOrNull() ?: Float.MAX_VALUE }
-                .take(6)
-        )
+    override suspend fun getNearbyBusinesses(latitude: Double?, longitude: Double?): Result<List<Business>> {
+        return try {
+            val response = apiService.getPublicProjects(latitude, longitude)
+
+            if (response.isSuccessful && response.body() != null) {
+                val maxDistanceKm = 4.0 // Radio máximo de cercanía en kilómetros
+                
+                val allBusinesses = response.body()!!
+                    .map { it.toDomain(userLatitude = latitude, userLongitude = longitude) }
+                
+                val businesses = allBusinesses.filter { business ->
+                        // Excluir negocios sin distancia calculada (distanceKm null)
+                        val distance = business.distanceKm
+                        val include = distance != null && distance <= maxDistanceKm
+                        include
+                    }
+                    .sortedBy { it.distanceKm } // Ordenar por distancia (más cercano primero)
+                
+                Result.success(businesses)
+            } else {
+                Result.failure(Exception("Error al obtener negocios cercanos: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red: ${e.message}", e))
+        }
     }
 
     /**
@@ -121,6 +292,18 @@ class DefaultBusinessRepository @Inject constructor() : BusinessRepository {
      * Consulta los slots de tiempo disponibles para una fecha específica.
      * En producción, esto verificaría la disponibilidad real del profesional
      * consultando las citas ya agendadas.
+
+     * 
+     * @param businessId ID del negocio
+     * @param professionalId ID del profesional
+     * @param date Fecha para la cual consultar disponibilidad (timestamp)
+     * @return Result con la lista de horarios disponibles
+     */
+    /**
+     * Obtiene los horarios disponibles para reservar con un profesional.
+     * 
+     * Consulta los slots de tiempo disponibles para una fecha específica desde la API.
+     * Utiliza temporalmente localhost (10.0.2.2) para el endpoint de disponibilidad.
      * 
      * @param businessId ID del negocio
      * @param professionalId ID del profesional
@@ -132,9 +315,48 @@ class DefaultBusinessRepository @Inject constructor() : BusinessRepository {
         professionalId: String,
         date: Long
     ): Result<List<TimeSlot>> {
-        delay(500)
-        // En producción esto consultaría la disponibilidad real
-        return Result.success(MockData.timeSlots)
+        return try {
+            // Formatear fecha a YYYY-MM-DD
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            val dateStr = sdf.format(java.util.Date(date))
+            
+            // URL hardcodeada para Spring Boot local (IP local)
+            val url = "https://app.meet-lines.com/api/v1/appointments/employees/$professionalId/available-slots"
+            
+            val response = apiService.getAvailableSlots(url, dateStr, businessId)
+            
+            
+            if (response.isSuccessful) {
+                // Si la respuesta es exitosa pero sin body, significa que no hay slots disponibles
+                if (response.body() == null) {
+                    android.util.Log.w("AvailableSlots", "Backend devolvió 200 OK pero sin slots para fecha: $dateStr, employee: $professionalId")
+                    return Result.success(emptyList())
+                }
+                
+                val availability = response.body()!!
+                
+                // Mapear slots de la API a TimeSlot del dominio
+                val timeSlots = availability.availableSlots.map { slot ->
+                    // Extraer solo la hora del startTime (ej: "2025-12-15T09:00:00-05:00" -> "09:00")
+                    val time = try {
+                        val slotDate = java.time.ZonedDateTime.parse(slot.startTime)
+                        java.time.format.DateTimeFormatter.ofPattern("HH:mm").format(slotDate)
+                    } catch (e: Exception) {
+                        // Fallback simple si falla el parseo complejo
+                        slot.startTime.substringAfter("T").substring(0, 5)
+                    }
+                    
+                    TimeSlot(time, true)
+                }
+                
+                Result.success(timeSlots)
+            } else {
+                // Si falla, devolver error con código de respuesta
+                Result.failure(Exception("Error al obtener slots: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+             Result.failure(Exception("Error de red al obtener slots: ${e.message}", e))
+        }
     }
 
     /**

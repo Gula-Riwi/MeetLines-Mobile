@@ -1,6 +1,9 @@
 package com.meetline.app.ui.business
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,7 +21,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -136,7 +141,7 @@ fun BusinessDetailScreen(
                                 selectedService
                             )
                         },
-                        enabled = selectedService != null && business.isOpen,
+                        enabled = selectedService != null,
                         modifier = Modifier.height(50.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Primary)
@@ -162,21 +167,30 @@ fun BusinessDetailScreen(
                 .background(Background),
             contentPadding = PaddingValues(bottom = paddingValues.calculateBottomPadding())
         ) {
-            // Header con imagen
+            // Carrusel de fotos o imagen por defecto
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(220.dp)
+                        .height(300.dp)
                 ) {
-                    AsyncImage(
-                        model = business.imageUrl.ifEmpty { business.category.imageUrl },
-                        contentDescription = business.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                    if (uiState.photos.isNotEmpty()) {
+                        // Mostrar carrusel con las fotos reales
+                        PhotoCarousel(
+                            photos = uiState.photos,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // Mostrar imagen de categoría si no hay fotos
+                        AsyncImage(
+                            model = business.category.imageUrl,
+                            contentDescription = business.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                     
-                    // Badge de estado
+                    // Badge de estado sobre el carrusel
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -227,29 +241,6 @@ fun BusinessDetailScreen(
                                     color = Primary
                                 )
                             }
-                            
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = Warning,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    text = "${business.rating}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = OnSurface
-                                )
-                                Text(
-                                    text = "(${business.reviewCount})",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = OnSurfaceVariant
-                                )
-                            }
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
@@ -267,20 +258,138 @@ fun BusinessDetailScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         // Info adicional
+                        val context = LocalContext.current
+                        
+                        // Ubicación - clickeable para abrir Maps
+                        if (business.latitude != null && business.longitude != null) {
+                            OutlinedButton(
+                                onClick = {
+                                    val uri = Uri.parse("geo:${business.latitude},${business.longitude}?q=${business.latitude},${business.longitude}(${business.name})")
+                                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                                    intent.setPackage("com.google.android.apps.maps")
+                                    try {
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        // Si no tiene Google Maps, usar navegador
+                                        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=${business.latitude},${business.longitude}"))
+                                        context.startActivity(webIntent)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Primary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = business.address,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.Default.OpenInNew,
+                                    contentDescription = "Abrir en Maps",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        } else {
+                            // Si no hay coordenadas, solo mostrar la dirección
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = OnSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = business.address,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = OnSurfaceVariant
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Horario
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
                         ) {
-                            InfoItem(
-                                icon = Icons.Default.LocationOn,
-                                label = business.distance
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = OnSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
                             )
-                            InfoItem(
-                                icon = Icons.Default.Schedule,
-                                label = business.openingHours
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = business.openingHours,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = OnSurfaceVariant
                             )
                         }
                     }
+                }
+            }
+            
+            // Canales de contacto
+            if (business.contactChannels.isNotEmpty()) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.surface
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp)
+                        ) {
+                            Text(
+                                text = "Contacto",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            // Mostrar chips en filas de 2
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                business.contactChannels.chunked(2).forEach { rowChannels ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        rowChannels.forEach { channel ->
+                                            ContactChannelChip(
+                                                channel = channel,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        // Agregar espacio vacío si solo hay 1 chip en la fila
+                                        if (rowChannels.size == 1) {
+                                            Spacer(modifier = Modifier.weight(1f))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
             

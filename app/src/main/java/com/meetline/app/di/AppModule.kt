@@ -44,5 +44,20 @@ object AppModule {
         @ApplicationContext context: Context
     ): SessionManager = SessionManager(context)
 
+    /**
+     * Provee una instancia única de LocationManager.
+     * 
+     * LocationManager gestiona la obtención de coordenadas GPS del dispositivo.
+     * 
+     * @param context Contexto de la aplicación inyectado automáticamente por Hilt
+     * @return Instancia singleton de LocationManager
+     */
+    @Provides
+    @Singleton
+    fun provideLocationManager(
+        @ApplicationContext context: Context
+    ): com.meetline.app.data.location.LocationManager = 
+        com.meetline.app.data.location.LocationManager(context)
+
     // Repositories are now provided by RepositoryModule via @Binds
 }

@@ -14,4 +14,8 @@ interface AppointmentRepository {
     suspend fun createAppointment(business: Business, professional: Professional, service: Service, date: Long, time: String, notes: String?): Result<Appointment>
     suspend fun cancelAppointment(appointmentId: String): Result<Boolean>
     suspend fun getAppointmentById(id: String): Result<Appointment>
+    
+    // Métodos protegidos con JWT (requieren autenticación)
+    suspend fun getMyActiveAppointments(): Result<List<Appointment>>
+    suspend fun getMyAppointmentHistory(): Result<List<Appointment>>
 }

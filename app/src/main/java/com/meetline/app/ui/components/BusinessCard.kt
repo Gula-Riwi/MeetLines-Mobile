@@ -86,30 +86,8 @@ fun BusinessCard(
                         modifier = Modifier.weight(1f)
                     )
                     
-                    // Badge de estado
-                    if (business.isOpen) {
-                        Badge(
-                            containerColor = Success.copy(alpha = 0.15f),
-                            contentColor = Success
-                        ) {
-                            Text(
-                                text = "Abierto",
-                                fontSize = 10.sp,
-                                modifier = Modifier.padding(horizontal = 4.dp)
-                            )
-                        }
-                    } else {
-                        Badge(
-                            containerColor = Error.copy(alpha = 0.15f),
-                            contentColor = Error
-                        ) {
-                            Text(
-                                text = "Cerrado",
-                                fontSize = 10.sp,
-                                modifier = Modifier.padding(horizontal = 4.dp)
-                            )
-                        }
-                    }
+                    // Badge de estado - Removido para listados, solo se muestra en detalle
+                    // donde se consulta el estado real desde working-hours
                 }
                 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -122,46 +100,22 @@ fun BusinessCard(
                 
                 Spacer(modifier = Modifier.height(6.dp))
                 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Rating
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = Warning,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${business.rating}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium,
-                            color = OnSurface
-                        )
-                        Text(
-                            text = " (${business.reviewCount})",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = OnSurfaceVariant
-                        )
-                    }
-                    
-                    // Distancia
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = OnSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = business.distance,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = OnSurfaceVariant
-                        )
-                    }
+                // Mostrar distancia o dirección según disponibilidad
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = OnSurfaceVariant,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (business.distance != "N/A") business.distance else business.address,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
@@ -215,23 +169,8 @@ fun FeaturedBusinessCard(
                     )
                 }
                 
-                // Badge de estado
-                if (business.isOpen) {
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp),
-                        shape = CircleShape,
-                        color = Success
-                    ) {
-                        Text(
-                            text = "Abierto",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                }
+                // Badge de estado - Removido para listados, solo se muestra en detalle
+                // donde se consulta el estado real desde working-hours
             }
             
             // Contenido
@@ -259,37 +198,22 @@ fun FeaturedBusinessCard(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = Warning,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${business.rating}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = OnSurface
-                        )
-                        Text(
-                            text = " (${business.reviewCount})",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = OnSurfaceVariant
-                        )
-                    }
-                    
+                // Distancia o dirección
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = business.distance,
+                        text = if (business.distance != "N/A") business.distance else business.address,
                         style = MaterialTheme.typography.bodySmall,
                         color = Primary,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

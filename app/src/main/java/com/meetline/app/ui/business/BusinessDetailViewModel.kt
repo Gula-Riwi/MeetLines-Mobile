@@ -17,11 +17,13 @@ import javax.inject.Inject
  * 
  * @property isLoading Indica si se está cargando la información del negocio
  * @property business Información completa del negocio
+ * @property photos Lista de URLs de fotos del negocio
  * @property error Mensaje de error si ocurrió un problema
  */
 data class BusinessDetailUiState(
     val isLoading: Boolean = true,
     val business: Business? = null,
+    val photos: List<String> = emptyList(),
     val error: String? = null
 )
 
@@ -40,6 +42,7 @@ data class BusinessDetailUiState(
 @HiltViewModel
 class BusinessDetailViewModel @Inject constructor(
     private val getBusinessDetailUseCase: GetBusinessDetailUseCase,
+    private val businessRepository: com.meetline.app.domain.repository.BusinessRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -68,10 +71,40 @@ class BusinessDetailViewModel @Inject constructor(
             
             getBusinessDetailUseCase(businessId)
                 .onSuccess { business ->
-                    _uiState.value = BusinessDetailUiState(
-                        isLoading = false,
-                        business = business
-                    )
+                    // Cargar fotos del negocio
+                    businessRepository.getBusinessPhotos(businessId)
+                        .onSuccess { additionalPhotos ->
+                            // Combinar la imagen principal con las fotos adicionales
+                            val allPhotos = mutableListOf<String>()
+                            
+                            // Agregar la foto de perfil SOLO si es una foto real (no es la imagen de categoría)
+                            if (business.imageUrl.isNotBlank() && business.imageUrl != business.category.imageUrl) {
+                                allPhotos.add(business.imageUrl)
+                            }
+                            
+                            // Agregar las fotos adicionales
+                            allPhotos.addAll(additionalPhotos)
+                            
+                            _uiState.value = BusinessDetailUiState(
+                                isLoading = false,
+                                business = business,
+                                photos = allPhotos
+                            )
+                        }
+                        .onFailure {
+                            // Si falla cargar fotos, usar solo la imagen principal si existe
+                            val photos = if (business.imageUrl.isNotBlank() && business.imageUrl != business.category.imageUrl) {
+                                listOf(business.imageUrl)
+                            } else {
+                                emptyList()
+                            }
+                            
+                            _uiState.value = BusinessDetailUiState(
+                                isLoading = false,
+                                business = business,
+                                photos = photos
+                            )
+                        }
                 }
                 .onFailure { exception ->
                     _uiState.value = BusinessDetailUiState(

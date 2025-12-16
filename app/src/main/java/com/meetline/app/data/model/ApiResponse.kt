@@ -88,7 +88,7 @@ data class ApiMeta(
  *
  * @property email Correo electrónico del usuario.
  * @property password Contraseña del usuario.
- * @property name Nombre del usuario (solo para registro).
+ * @property fullName Nombre completo del usuario (solo para registro).
  * @property phone Teléfono del usuario (solo para registro).
  */
 data class AuthRequest(
@@ -98,8 +98,8 @@ data class AuthRequest(
     @SerializedName("password")
     val password: String,
     
-    @SerializedName("name")
-    val name: String? = null,
+    @SerializedName("fullName")
+    val fullName: String? = null,
     
     @SerializedName("phone")
     val phone: String? = null
@@ -110,53 +110,38 @@ data class AuthRequest(
  *
  * Contiene los datos del usuario autenticado y el token de acceso.
  *
- * @property user Datos del usuario autenticado.
  * @property token Token JWT para autorización de requests.
- * @property refreshToken Token para renovar la sesión (opcional).
- * @property expiresAt Timestamp de expiración del token.
+ * @property refreshToken Token para renovar la sesión.
+ * @property fullName Nombre completo del usuario.
+ * @property email Email del usuario.
  */
 data class AuthResponse(
-    @SerializedName("user")
-    val user: UserDto,
-    
     @SerializedName("token")
     val token: String,
     
-    @SerializedName("refresh_token")
-    val refreshToken: String?,
+    @SerializedName("refreshToken")
+    val refreshToken: String,
     
-    @SerializedName("expires_at")
-    val expiresAt: Long?
+    @SerializedName("fullName")
+    val fullName: String,
+    
+    @SerializedName("email")
+    val email: String
 )
 
 /**
- * Request para crear una nueva cita.
+ * DTO para solicitud de reset de contraseña.
  *
- * Contiene todos los datos necesarios para agendar una cita.
- *
- * @property businessId ID del negocio seleccionado.
- * @property professionalId ID del profesional seleccionado.
- * @property serviceId ID del servicio a reservar.
- * @property date Fecha de la cita (formato YYYY-MM-DD).
- * @property time Hora de la cita (formato HH:mm).
- * @property notes Notas adicionales del usuario (opcional).
+ * @property token Token recibido en el email de recuperación.
+ * @property newPassword Nueva contraseña a establecer.
  */
-data class CreateAppointmentRequest(
-    @SerializedName("business_id")
-    val businessId: String,
+data class ResetPasswordRequest(
+    @SerializedName("token")
+    val token: String,
     
-    @SerializedName("professional_id")
-    val professionalId: String,
-    
-    @SerializedName("service_id")
-    val serviceId: String,
-    
-    @SerializedName("date")
-    val date: String,
-    
-    @SerializedName("time")
-    val time: String,
-    
-    @SerializedName("notes")
-    val notes: String?
+    @SerializedName("newPassword")
+    val newPassword: String
 )
+
+// CreateAppointmentRequest movido a CreateAppointmentDtos.kt para coincidir con la estructura del endpoint local
+

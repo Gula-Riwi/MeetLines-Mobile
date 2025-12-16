@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.meetline.app.domain.model.User
 import com.meetline.app.domain.usecase.GetSessionUseCase
+import com.meetline.app.domain.usecase.GetUserProfileUseCase
 import com.meetline.app.domain.usecase.LogoutUseCase
 import com.meetline.app.domain.usecase.UpdateProfileUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,6 +44,7 @@ data class ProfileUiState(
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val getSessionUseCase: GetSessionUseCase,
+    private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
     private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
@@ -54,16 +56,35 @@ class ProfileViewModel @Inject constructor(
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
     
     init {
-        loadUser()
+        loadUserProfile()
     }
     
     /**
-     * Carga los datos del usuario actual.
+     * Carga los datos del usuario desde el servidor.
      */
-    private fun loadUser() {
-        _uiState.value = ProfileUiState(
-            user = getSessionUseCase()
-        )
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            // Mostrar datos locales inmediatamente
+            _uiState.value = ProfileUiState(
+                isLoading = true,
+                user = getSessionUseCase()
+            )
+            
+            // Luego actualizar desde el servidor
+            getUserProfileUseCase()
+                .onSuccess { user ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        user = user
+                    )
+                }
+                .onFailure {
+                    // Mantener datos locales si falla la petición
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false
+                    )
+                }
+        }
     }
     
     /**
@@ -78,7 +99,7 @@ class ProfileViewModel @Inject constructor(
      */
     fun cancelEditing() {
         _uiState.value = _uiState.value.copy(isEditing = false)
-        loadUser() // Reset to original values
+        loadUserProfile() // Reset to original values
     }
     
     /**

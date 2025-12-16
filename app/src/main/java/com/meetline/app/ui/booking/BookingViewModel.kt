@@ -168,6 +168,7 @@ class BookingViewModel @Inject constructor(
      * 
      * Consulta al repositorio los slots de tiempo disponibles para
      * el profesional y fecha seleccionados.
+     * Filtra las horas pasadas si la fecha seleccionada es hoy.
      * 
      * @param date Fecha para la cual consultar disponibilidad
      */
@@ -181,9 +182,59 @@ class BookingViewModel @Inject constructor(
                 professionalId = professional.id,
                 date = date
             ).onSuccess { slots ->
-                _uiState.value = _uiState.value.copy(availableTimeSlots = slots)
+                // Filtrar horas pasadas si es hoy
+                val filteredSlots = filterPastTimeSlots(date, slots)
+                _uiState.value = _uiState.value.copy(availableTimeSlots = filteredSlots)
             }
         }
+    }
+    
+    /**
+     * Filtra los slots de tiempo que ya pasaron si la fecha es hoy.
+     * 
+     * @param selectedDate Fecha seleccionada en timestamp
+     * @param slots Lista de slots disponibles
+     * @return Lista filtrada sin horas pasadas
+     */
+    private fun filterPastTimeSlots(selectedDate: Long, slots: List<TimeSlot>): List<TimeSlot> {
+        val calendar = java.util.Calendar.getInstance()
+        val today = calendar.timeInMillis
+        
+        // Normalizar ambas fechas al inicio del día para comparar solo la fecha
+        val selectedDateCal = java.util.Calendar.getInstance().apply {
+            timeInMillis = selectedDate
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        
+        val todayCal = java.util.Calendar.getInstance().apply {
+            timeInMillis = today
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        
+        // Si la fecha seleccionada es hoy, filtrar horas pasadas
+        if (selectedDateCal.timeInMillis == todayCal.timeInMillis) {
+            val currentTime = java.util.Calendar.getInstance()
+            val currentHour = currentTime.get(java.util.Calendar.HOUR_OF_DAY)
+            val currentMinute = currentTime.get(java.util.Calendar.MINUTE)
+            
+            return slots.filter { slot ->
+                val timeParts = slot.time.split(":")
+                val slotHour = timeParts[0].toInt()
+                val slotMinute = timeParts[1].toInt()
+                
+                // Mantener el slot si es después de la hora actual
+                slotHour > currentHour || (slotHour == currentHour && slotMinute > currentMinute)
+            }
+        }
+        
+        // Si es un día futuro, devolver todos los slots
+        return slots
     }
     
     /**
