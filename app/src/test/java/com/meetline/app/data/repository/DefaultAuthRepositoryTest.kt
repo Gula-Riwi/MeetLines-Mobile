@@ -22,14 +22,16 @@ class DefaultAuthRepositoryTest {
 
     /** Mock del SessionManager. */
     private lateinit var sessionManager: SessionManager
-    
+    /** Mock del ApiService. */
+    private lateinit var apiService: com.meetline.app.data.remote.MeetLineApiService
     /** Repositorio bajo prueba. */
     private lateinit var repository: DefaultAuthRepository
 
     @Before
     fun setUp() {
         sessionManager = mockk(relaxed = true)
-        repository = DefaultAuthRepository(sessionManager)
+        apiService = mockk(relaxed = true)
+        repository = DefaultAuthRepository(sessionManager, apiService)
     }
 
     /**
