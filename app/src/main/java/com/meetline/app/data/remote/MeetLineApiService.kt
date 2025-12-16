@@ -370,6 +370,19 @@ interface MeetLineApiService {
     ): Response<ApiResponse<AppointmentDto>>
 
     /**
+     * Cancela una cita del cliente autenticado.
+     *
+     * Este endpoint está protegido y requiere autenticación JWT.
+     *
+     * @param url URL completa del endpoint.
+     * @return Respuesta sin contenido si la cancelación fue exitosa.
+     */
+    @PUT
+    suspend fun cancelClientAppointment(
+        @Url url: String
+    ): Response<Unit>
+
+    /**
      * Obtiene horarios disponibles para un negocio y profesional.
      *
      * @param businessId ID del negocio.
