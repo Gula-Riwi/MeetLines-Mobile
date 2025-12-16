@@ -173,26 +173,37 @@ class DefaultAppointmentRepository @Inject constructor(
     }
 
     /**
-     * Cancela una cita existente.
+     * Cancela una cita existente llamando al endpoint del backend.
      * 
-     * Cambia el estado de la cita a CANCELLED. En producción, esto
-     * notificaría al negocio y actualizaría el backend.
+     * Este método requiere autenticación JWT y cancela la cita en el servidor.
      * 
      * @param appointmentId ID de la cita a cancelar
      * @return Result con true si la cancelación fue exitosa
      */
     override suspend fun cancelAppointment(appointmentId: String): Result<Boolean> {
-        delay(800)
-        
-        _appointments.value = _appointments.value.map { appointment ->
-            if (appointment.id == appointmentId) {
-                appointment.copy(status = AppointmentStatus.CANCELLED)
+        return try {
+            // Construir URL completa del endpoint
+            val url = "${appointmentsUrl}api/client/appointments/${appointmentId}/cancel"
+            val response = apiService.cancelClientAppointment(url)
+            
+            if (response.isSuccessful) {
+                // Actualizar caché local si la cancelación fue exitosa
+                _appointments.value = _appointments.value.map { appointment ->
+                    if (appointment.id == appointmentId) {
+                        appointment.copy(status = AppointmentStatus.CANCELLED)
+                    } else {
+                        appointment
+                    }
+                }
+                Result.success(true)
+            } else if (response.code() == 401) {
+                Result.failure(Exception("Error de autorización en servicio de citas (401)"))
             } else {
-                appointment
+                Result.failure(Exception("Error al cancelar cita: ${response.code()} - ${response.message()}"))
             }
+        } catch (e: Exception) {
+            Result.failure(Exception("Error de red al cancelar cita: ${e.message}", e))
         }
-        
-        return Result.success(true)
     }
 
     /**
