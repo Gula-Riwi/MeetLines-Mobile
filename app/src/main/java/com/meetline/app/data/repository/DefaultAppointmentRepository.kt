@@ -183,7 +183,7 @@ class DefaultAppointmentRepository @Inject constructor(
     override suspend fun cancelAppointment(appointmentId: String): Result<Boolean> {
         return try {
             // Construir URL completa del endpoint
-            val url = "${appointmentsUrl}api/client/appointments/${appointmentId}/cancel"
+            val url = "${appointmentsUrl}api/client/appointments/${appointmentId}"
             val response = apiService.cancelClientAppointment(url)
             
             if (response.isSuccessful) {

@@ -191,8 +191,16 @@ class AppointmentsViewModel @Inject constructor(
      */
     fun cancelAppointment(appointmentId: String) {
         viewModelScope.launch {
-            cancelAppointmentUseCase(appointmentId)
-            loadAppointments() // Reload
+            val result = cancelAppointmentUseCase(appointmentId)
+            if (result.isSuccess) {
+                // Recargar las citas activas desde la API
+                loadMyActiveAppointments()
+            } else {
+                // Mostrar error si la cancelación falla
+                _uiState.value = _uiState.value.copy(
+                    error = result.exceptionOrNull()?.message ?: "Error al cancelar cita"
+                )
+            }
         }
     }
 }
