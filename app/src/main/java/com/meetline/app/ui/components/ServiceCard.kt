@@ -43,7 +43,7 @@ fun ServiceCard(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) PrimaryContainer else Surface
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
         ),
         border = if (isSelected) {
             CardDefaults.outlinedCardBorder().copy(width = 2.dp)
@@ -63,7 +63,7 @@ fun ServiceCard(
                     text = service.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = OnSurface
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -71,7 +71,7 @@ fun ServiceCard(
                 Text(
                     text = service.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -84,12 +84,12 @@ fun ServiceCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = Primary.copy(alpha = 0.1f)
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                     ) {
                         Text(
                             text = "⏱ ${service.duration} min",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Primary,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
@@ -103,7 +103,7 @@ fun ServiceCard(
                     text = "$${String.format("%.0f", service.price)}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 
                 if (isSelected) {
@@ -111,7 +111,7 @@ fun ServiceCard(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Seleccionado",
-                        tint = Primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                 }

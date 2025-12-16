@@ -234,6 +234,20 @@ interface MeetLineApiService {
     ): Response<List<EmployeeDto>>
     
     /**
+     * Obtiene las fotos de un proyecto específico.
+     *
+     * Este endpoint no requiere autenticación y retorna todas las fotos
+     * asociadas a un proyecto/negocio.
+     *
+     * @param projectId ID del proyecto.
+     * @return Lista de fotos del proyecto.
+     */
+    @GET("api/Projects/{projectId}/photos")
+    suspend fun getProjectPhotos(
+        @Path("projectId") projectId: String
+    ): Response<List<PhotoDto>>
+    
+    /**
      * Obtiene los slots disponibles para un empleado específico en una fecha determinada.
      * 
      * @param url URL completa del endpoint (para usar localhost temporalmente).

@@ -101,7 +101,7 @@ fun BookingScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shadowElevation = 8.dp,
-                color = Surface
+                color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -113,7 +113,7 @@ fun BookingScreen(
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            color = PrimaryContainer
+                            color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Row(
                                 modifier = Modifier.padding(12.dp),
@@ -125,19 +125,19 @@ fun BookingScreen(
                                         text = uiState.selectedService!!.name,
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = OnSurface
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = "${dateFormat.format(Date(uiState.selectedDate!!))} • ${uiState.selectedTime}",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = OnSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                                 Text(
                                     text = "$${String.format("%.0f", uiState.selectedService!!.price)}",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = Primary
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -152,7 +152,7 @@ fun BookingScreen(
                             .fillMaxWidth()
                             .height(54.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         if (uiState.isBooking) {
                             CircularProgressIndicator(

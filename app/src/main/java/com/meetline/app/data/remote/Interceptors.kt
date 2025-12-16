@@ -81,7 +81,14 @@ class AuthInterceptor @Inject constructor(
             originalRequest
         }
         
-        return chain.proceed(request)
+        val response = chain.proceed(request)
+        
+        // Si recibimos 401 Unauthorized, cerrar la sesión automáticamente
+        if (response.code == 401 && requiresAuth) {
+            sessionManager.logout()
+        }
+        
+        return response
     }
 }
 

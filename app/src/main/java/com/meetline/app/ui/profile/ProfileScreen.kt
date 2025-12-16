@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
@@ -40,6 +41,9 @@ import com.meetline.app.ui.theme.*
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
+    isDarkMode: Boolean,
+    onThemeToggle: () -> Unit,
+    onNavigateToAbout: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -102,7 +106,17 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Primary, PrimaryLight)
+                            colors = if (isDarkMode) {
+                                listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                )
+                            } else {
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                )
+                            }
                         ),
                         shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                     )
@@ -328,28 +342,18 @@ fun ProfileScreen(
                     Column(
                         modifier = Modifier.padding(8.dp)
                     ) {
-                        ProfileMenuItem(
-                            icon = Icons.Default.Notifications,
-                            title = "Notificaciones",
-                            onClick = { /* TODO */ }
-                        )
-                        
-                        ProfileMenuItem(
-                            icon = Icons.Default.Lock,
-                            title = "Cambiar contraseña",
-                            onClick = { /* TODO */ }
-                        )
-                        
-                        ProfileMenuItem(
-                            icon = Icons.AutoMirrored.Filled.Help,
-                            title = "Ayuda y soporte",
-                            onClick = { /* TODO */ }
+                        // Opción de modo oscuro
+                        ProfileMenuItemWithSwitch(
+                            icon = Icons.Default.DarkMode,
+                            title = "Modo oscuro",
+                            checked = isDarkMode,
+                            onCheckedChange = { onThemeToggle() }
                         )
                         
                         ProfileMenuItem(
                             icon = Icons.Default.Info,
                             title = "Acerca de",
-                            onClick = { /* TODO */ }
+                            onClick = onNavigateToAbout
                         )
                     }
                 }
@@ -483,10 +487,52 @@ private fun ProfileMenuItem(
             )
             
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 tint = OnSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun ProfileMenuItemWithSwitch(
+    icon: ImageVector,
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = OnSurfaceVariant,
+            modifier = Modifier.size(24.dp)
+        )
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = OnSurface,
+            modifier = Modifier.weight(1f)
+        )
+        
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Primary,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = OnSurfaceVariant.copy(alpha = 0.3f)
+            )
+        )
     }
 }

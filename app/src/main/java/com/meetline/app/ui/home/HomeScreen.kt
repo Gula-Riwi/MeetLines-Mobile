@@ -50,6 +50,7 @@ fun HomeScreen(
     onAppointmentClick: (String) -> Unit,
     onSeeAllBusinesses: () -> Unit,
     onSeeAllAppointments: () -> Unit,
+    isDarkMode: Boolean,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -92,7 +93,17 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Primary, PrimaryLight)
+                            colors = if (isDarkMode) {
+                                listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                )
+                            } else {
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                )
+                            }
                         ),
                         shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                     )
