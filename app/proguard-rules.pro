@@ -94,3 +94,20 @@
 
 # Google ErrorProne annotations (referenced by Tink)
 -dontwarn com.google.errorprone.annotations.**
+
+# ==================== Jetpack Compose ====================
+# Keep all composable functions
+-keepclassmembers class * {
+    @androidx.compose.runtime.Composable <methods>;
+}
+
+# Keep companion objects of composable functions
+-keepclassmembers class * {
+    @androidx.compose.runtime.Composable <methods>;
+    companion object;
+}
+
+# Keep classes used by Compose previews
+-keepclasseswithmembers class * {
+    @androidx.compose.ui.tooling.preview.Preview <methods>;
+}
